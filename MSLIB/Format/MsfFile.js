@@ -54,9 +54,7 @@ MSLIB.Format.MsfFile = function() {
            values_mz.push(peaks[i].getAttribute("X"));
            values_int.push(peaks[i].getAttribute("Y"));
           }
-          this.Query.Result.Spectrum = {};
-          this.Query.Result.Spectrum.mzs = values_mz;
-          this.Query.Result.Spectrum.ints = values_int;
+          this.Query.Result.Spectrum = new MSLIB.Data.Spectrum(values_mz,values_int);
           reader.close(function() {});
          }).bind(this)
         )

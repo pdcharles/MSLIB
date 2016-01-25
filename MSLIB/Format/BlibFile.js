@@ -61,9 +61,7 @@ MSLIB.Format.BlibFile = function() {
     for (var i = 0; i < dV_int.byteLength; i = i+4) { 
      values_int.push(dV_int.getFloat32(i,true)); 
     }
-    this.Query.Result.SpectrumData = {};
-    this.Query.Result.SpectrumData.mzs = values_mz;
-    this.Query.Result.SpectrumData.ints = values_int;
+    this.Query.Result.Spectrum = new MSLIB.Data.Spectrum(values_mz,values_int);
    }).bind(this)
   );
  }

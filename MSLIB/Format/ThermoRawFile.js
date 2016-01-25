@@ -180,7 +180,7 @@ MSLIB.Format.ThermoRawFile = function() {
        mzs = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map(function(peak) {return peak.Mz});
        ints = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map(function(peak) {return peak.Abundance});
       }
-      this.CurrentScan.SpectrumData={mzs:mzs, ints:ints};
+      this.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(mzs,ints);
       MSLIB.Common.Finished.call(this);
      }).bind(this),this.Scans[this.CurrentScan.ScanNumber].Offset,ScanDataPacket);
     }).call(this.Parent);

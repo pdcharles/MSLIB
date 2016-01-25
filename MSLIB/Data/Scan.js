@@ -18,8 +18,8 @@ MSLIB.Data.Scan = function() {
   this.PrecursorIntensities = [];
   this.PrecursorCharges     = [];
   this.ActivationMethods    = [];
-  this.Internal             = {}
-  this.SpectrumData         = {};
+  this.Internal             = {};
+  this.Spectrum             = null;
  };
  return Scan;
 }();
