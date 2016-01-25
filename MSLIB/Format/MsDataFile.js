@@ -5,11 +5,12 @@ if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 MSLIB.Format.MsDataFile = function() {
 
  var MsDataFile = function(f) {
-  if (!f) {
-   console.log("Error: file path not specified");
-   return {};
+  if (f) {
+   this.Reader     = new MSLIB.Common.Reader(f,this);
   }
-  this.Reader      = new MSLIB.Common.Reader(f,this);
+  else {
+   this.Reader     = null;
+  }
   this.Ready       = true;
   this.Progress    = 100;
   this.Report      = false;
@@ -58,11 +59,13 @@ MSLIB.Format.MsDataFile = function() {
 
  var populateMinutes = function() {
   this.Scans.forEach(function(ele) {
-   var minute = Math.round(ele.Scan.RetentionTime);
-   if (!this.Internal.Minutes[minute]) {
-    this.Internal.Minutes[minute] = [];
+   if (ele.Scan.RetentionTime) {
+    var minute = Math.round(ele.Scan.RetentionTime);
+    if (!this.Internal.Minutes[minute]) {
+     this.Internal.Minutes[minute] = [];
+    }
+    this.Internal.Minutes[minute].push(ele.Scan.ScanNumber);
    }
-   this.Internal.Minutes[minute].push(ele.Scan.ScanNumber);
   },this);
  }
 
@@ -168,7 +171,6 @@ MSLIB.Format.MsDataFile = function() {
   return("MsDataFileNotImplemented");
   console.log("Not Implemented!");
  }
-
 
  return MsDataFile;
 

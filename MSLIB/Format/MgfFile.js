@@ -5,17 +5,13 @@ if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 MSLIB.Format.MgfFile = function () {
 
  var MgfFile = function(f) {
-  this.Reader                 = new MSLIB.Common.Reader(f,this);
-  this.Reader.onprogress = function(data) {
+  MSLIB.Format.MsDataFile.call(this, f);
+  this.Reader.onprogress      = function(data) {
    if (data.lengthComputable) {                                            
     this.Progress = parseInt(((data.loaded/data.total)*100).toFixed(2));
    }
   }
-  this.Ready                  = true;
-  this.Progress               = 100;
-  this.Report                 = false;
   this.FileType               = "mgf";
-  this.Scans                  = [];
  };
 
  var headerParse = /^([^=]+)=(.+)$/;
@@ -30,6 +26,7 @@ MSLIB.Format.MgfFile = function () {
     var text = this.result.replace(/\r\n?/gm,"\n");
     var entries = text.split("END IONS");
     while (entries[entries.length-1].match(/^\s*$/)) entries.pop(); // remove trailing blank lines
+    var previousScan = null;
     entries.forEach(function(entry,i) {
      var mgfEntryLines = entry.substr(entry.indexOf("BEGIN IONS")+10).split("\n");
      var headers = {};
@@ -73,18 +70,29 @@ MSLIB.Format.MgfFile = function () {
        if (headers.CHARGE) {
         scan.PrecursorCharges = [+chargeParse.exec(headers.CHARGE)[1]];
        }
+       if (headers.RTINSECONDS) {
+        scan.RetentionTime = [headers.RTINSECONDS/60];
+       }
        scan.Spectrum = new MSLIB.Data.Spectrum(mzs, ints);
+       scan.BasePeakMz = scan.Spectrum.getBasePeakMz();
+       scan.BasePeakIntensity = scan.Spectrum.getBasePeakIntensity(); 
+       scan.TotalCurrent = scan.Spectrum.getTotalIntensity();
        scan.Internal.Headers = headers;
-       this.Parent.Scans[i] = {Scan: scan};
+       this.Parent.Scans[i] = {}
+       this.Parent.Scans[i].Scan = scan;
+       this.Parent.Scans[i].Length = entry.length;
+       if (previousScan) {
+        this.Parent.Scans[previousScan].Next = i;
+        this.Parent.Scans[i].Previous = previousScan;
+       }
+       previousScan = scan.ScanNumber;
       }
       else {
        console.log("Failed to parse Precursor mass from PEPMASS in "+i+":"+entry);
-       return;
       }
      }
      else {
       console.log("Failed to parse TITLE and PEPMASS from entry "+i+":"+entry);
-      return;
      }
     },this);
     MSLIB.Common.Finished.call(this.Parent);
