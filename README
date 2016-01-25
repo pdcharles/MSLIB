@@ -9,13 +9,13 @@ up-to-date web browser installed.
 File formats currently supported:
  => Generic comma and tab-separated text files
  => .fasta Amino and Nucleic acid sequence files
+ => .mgf Matrix Science(TM) Mascot Generic Format MS/MS peaklist files
  => .mzML and .mzXML MS data files (most vendor-specific raw data files can be converted to or exported as this format)
  => .raw Thermo Fisher Scientific(TM) Raw data files (experimental, a port of UnThermo - https://godoc.org/bitbucket.org/proteinspector/ms/unthermo)
  => .msf Thermo Fisher Scientific(TM) Magellan Storage Format files produced by Thermo Proteome Discoverer(TM)
  => .blib BiblioSpec Spectral Library files (https://skyline.gs.washington.edu/labkey/project/home/software/BiblioSpec/begin.view)
 
 Support is also intended for:
- => .mgf Matrix Science(TM) Mascot Generic Format Ms/MS peaklist files
  => .ms1 and .ms2 MS data files (Yates Lab format http://fields.scripps.edu/)
 
 MSLIB has the following dependencies:
