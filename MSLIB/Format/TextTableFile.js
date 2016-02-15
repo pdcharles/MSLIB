@@ -10,12 +10,14 @@ MSLIB.Format.TextTableFile = function () {
   this.Progress               = 100;
   this.Report                 = false;
   this.FileType               = "text_table";
-  this.Delimiter              = "";
   if (f.name.match(/\.csv$/i)) {
    this.Delimiter = ",";
   }
-  else if (f.name.match(/\.tsv$/i) || f.name.match(/\.tab.txt$/i)) {
+  else if (f.name.match(/\.tsv$/i) || f.name.match(/\.txt$/i)) {
    this.Delimiter = "\t";
+  }
+  else {
+   this.Delimiter = "";
   }
   this.UseFirstLineAsHeaders  = false;
   this.Headers                = [];
