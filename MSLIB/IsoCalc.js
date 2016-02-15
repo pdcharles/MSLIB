@@ -568,7 +568,7 @@ MSLIB.IsoCalc = function() {
                                               atoms:{
                                                Carbon  : 5,
                                                Hydrogen: 7,
-                                               Nitrogen: 2,
+                                               Nitrogen: 1,
                                                Oxygen  : 1
                                               }});
  AminoAcids["Serine"] =        new AminoAcid({
