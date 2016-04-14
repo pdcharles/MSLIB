@@ -30,7 +30,7 @@ MSLIB.Common = function(){
  
  var Reader = function(f,parent) {
   var r = new FileReader();
-  if ((typeof(f) !== 'undefined')) {
+  if ((typeof(f) == 'object') && f.constructor === File) {
    r.File = f;
   }
   else {
