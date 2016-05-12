@@ -63,15 +63,7 @@ MSLIB.IsoCalc = function() {
   }
   var isotope_array = [];
   isotope_array = isotope_array.concat.apply(isotope_array,
-   this.isotopes.map(
-    function(i) {
-     return conv_ha.isotopes.map(
-      function(j) {
-       return [i[0]+j[0],i[1]*j[1]];
-      }
-     )
-    }
-   )
+   this.isotopes.map((i) => conv_ha.isotopes.map((j) => [i[0]+j[0],i[1]*j[1]]))
   );
   var isotope_hash = {};
   for (var i in isotope_array) {
@@ -82,33 +74,17 @@ MSLIB.IsoCalc = function() {
     isotope_hash[isotope_array[i][0]] += isotope_array[i][1];
    }
   }
-  var iso_hash_keys = Object.keys(isotope_hash).sort(
-   function(a,b) {
-    return a-b;
-   }  
-  )
-  var final_array = iso_hash_keys.map(
-   function(i) {
-    return [parseFloat(i),isotope_hash[i]];
-   }
-  );
-  var final_array_filtered = final_array.filter(
-   function(i) {
-    return i[1] > FRACTION_LIMIT;
-   }
-  );
+  var iso_hash_keys = Object.keys(isotope_hash).sort();
+  var final_array = iso_hash_keys.map((i) => [parseFloat(i),isotope_hash[i]]);
+  var final_array_filtered = final_array.filter((i) => (i[1] > FRACTION_LIMIT));
   return new Hyperatom({isotopes:final_array_filtered})
  }
  Hyperatom.prototype.with_charge = function(charge) {
-  var charged_array = this.isotopes.map(
-   function(i) {
-    return [i[0]/charge,i[1]];
-   }
-  );
+  var charged_array = this.isotopes.map((i) => [i[0]/charge,i[1]]);
   return new Hyperatom({isotopes:charged_array})
  }
  Hyperatom.prototype.as_spectrum = function() {
-  return new MSLIB.Data.Spectrum(this.isotopes.map(function(e){return e[0]}),this.isotopes.map(function(e){return e[1]}));
+  return new MSLIB.Data.Spectrum(this.isotopes.map((e) => e[0]),this.isotopes.map((e) => e[1]));
  }
  
  var Molecule = function(params) {
@@ -215,7 +191,7 @@ MSLIB.IsoCalc = function() {
       }
      },this);
      if (typeof(params.modifications) != "undefined") {
-      if ((typeof(params.modifications) == "object") && Array.isArray(params.modifications) && !params.modifications.map(function(a){return ((typeof(a) != "object") || (a.constructor !== Modification))}).reduce(function(a,b){return a+b})) {
+      if ((typeof(params.modifications) == "object") && Array.isArray(params.modifications) && !params.modifications.map((a) => ((typeof(a) != "object") || (a.constructor !== Modification))).reduce((a,b) => (a+b))) {
        this.modifications = params.modifications;
        for (var i in params.modifications) {
         var atom_keys = Object.keys(params.modifications[i].atoms);
@@ -272,7 +248,7 @@ MSLIB.IsoCalc = function() {
    if (!hyperatom_required) {
     continue;
    }
-   var bin_array = hyperatom_required.toString(2).split("").reverse().map(function(j){return parseInt(j)});
+   var bin_array = hyperatom_required.toString(2).split("").reverse().map((j) => parseInt(j));
    var max_exp = bin_array.length-1;
    var intermediate_hyperatom = {};
    if (altEleConst && altEleConst[atom]) {
@@ -370,7 +346,7 @@ MSLIB.IsoCalc = function() {
    }
   }
   groups = groups.slice(0,m);
-  var centroided_groups = groups.map(function(i){return centroid(i)});
+  var centroided_groups = groups.map((i) => centroid(i));
  
   //Then, group maxima closer than ppm_gap
   var grouped_centroided_groups = [[centroided_groups[0]]];
@@ -383,12 +359,8 @@ MSLIB.IsoCalc = function() {
     grouped_centroided_groups[grouped_centroided_groups.length] = [centroided_groups[i]];
    }
   }
-  var final_centroids = grouped_centroided_groups.map(function(i){return centroid(i)});
-  final_centroids = final_centroids.filter(
-   function(i) {
-    return i[1] > 0.01;
-   }
-  );
+  var final_centroids = grouped_centroided_groups.map((i) => centroid(i));
+  final_centroids = final_centroids.filter((i) => (i[1] > 0.01));
   return(new Hyperatom({isotopes:final_centroids}));
  }
  
@@ -624,9 +596,9 @@ MSLIB.IsoCalc = function() {
  }
  
  var centroid = function(arr) {
-  if ((typeof(arr) == "object") && Array.isArray(arr) && !arr.map(function(a){return ((typeof(a) != "object") || !Array.isArray(a))}).reduce(function(a,b){return a+b})) {
-   var tot_int = arr.reduce(function(acc,ele) {return acc+ele[1]}, 0);
-   var weighted_mean_mass = arr.reduce(function(acc,ele) {return acc+(ele[0]*ele[1])/tot_int}, 0);
+  if ((typeof(arr) == "object") && Array.isArray(arr) && !arr.map((a) => ((typeof(a) != "object") || !Array.isArray(a))).reduce((a,b) => (a+b))) {
+   var tot_int = arr.reduce((acc,ele) => (acc+ele[1]), 0);
+   var weighted_mean_mass = arr.reduce((acc,ele) => (acc+(ele[0]*ele[1])/tot_int), 0);
    return [weighted_mean_mass,tot_int];
   }
   else {

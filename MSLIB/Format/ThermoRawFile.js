@@ -42,7 +42,7 @@ MSLIB.Format.ThermoRawFile = function() {
         this.Internal.Offsets.RawFileInfo = this.Reader.Position;
         this.LastError = fetchStruct.call(this,(function(s){
          this.Internal.RawFileInfo = s;
-         this.Internal.Offsets.RunHeaders = this.Internal.RawFileInfo.RunHeaderAddr.map(function(ele){return ele.Offset});
+         this.Internal.Offsets.RunHeaders = this.Internal.RawFileInfo.RunHeaderAddr.map((ele) => ele.Offset);
          this.Internal.RunHeaders = [];
          fetchRunHeaders.call(this);
         }).bind(this),null,RawFileInfo);        
@@ -113,7 +113,7 @@ MSLIB.Format.ThermoRawFile = function() {
        this.Scans[s].Scan.Analyser           = (E.SEPreamble[40] >= ANALYSER.length ? undefined : ANALYSER[E.SEPreamble[40]]);
        this.Scans[s].Scan.Internal.HzConversionParams = [E.NParam,E.A,E.B,E.C];
        if (E.NPrecursors) {
-        this.Scans[s].Scan.PrecursorMzs      = (E.NPrecursors > 1 ? E.Reaction.map(function(ele) {return ele.PrecursorMz}) : [E.Reaction.PrecursorMz]);
+        this.Scans[s].Scan.PrecursorMzs      = (E.NPrecursors > 1 ? E.Reaction.map((ele) => ele.PrecursorMz) : [E.Reaction.PrecursorMz]);
        }
        if (prevSN != null) {
         this.Scans[prevSN].Next = s;
@@ -177,8 +177,8 @@ MSLIB.Format.ThermoRawFile = function() {
      		//Save the Centroided Peaks, they also occur in profile scans but
      		//overlap with profiles, Thermo always does centroiding just for fun
        this.CurrentScan.Centroided = 1;
-       mzs = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map(function(peak) {return peak.Mz});
-       ints = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map(function(peak) {return peak.Abundance});
+       mzs = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map((peak) => peak.Mz);
+       ints = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map((peak) => peak.Abundance);
       }
       this.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(mzs,ints);
       MSLIB.Common.Finished.call(this);
@@ -627,7 +627,7 @@ MSLIB.Format.ThermoRawFile = function() {
         console.log(this.Internal.Construction.PartialStruct);
        }
        else {
-        if (Reporting) console.log(this.Internal.Construction.CurrentStructDef.map(function(e) {return e[0]}).reverse().join(":") + " - " + substruct.ByteLength * repeat + " bytes at offset " + this.Reader.Position);
+        if (Reporting) console.log(this.Internal.Construction.CurrentStructDef.map((e) => e[0]).reverse().join(":") + " - " + substruct.ByteLength * repeat + " bytes at offset " + this.Reader.Position);
         this.LastError = this.Reader.readBinary(
          parseStructBinary,
          this.Reader.Position,

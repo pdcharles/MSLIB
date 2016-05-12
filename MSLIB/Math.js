@@ -8,10 +8,10 @@ MSLIB.Math = function() {
  };
 
  var mean = function(arr) {
-  var nonsparsearr = arr.filter(function(ele) {return ele != null});
+  var nonsparsearr = arr.filter((ele) => (ele != null));
   if (!nonsparsearr.length) return null;
   else {
-   var total = nonsparsearr.reduce(function(a,b) {return a+b},0);
+   var total = nonsparsearr.reduce((a,b) => (a+b),0);
    return total/nonsparsearr.length;
   }
  };
@@ -50,7 +50,7 @@ MSLIB.Math = function() {
  
  //Based on code from Skyline statistics library
  var dotProduct = function(vector_a,vector_b) {
-  if ([vector_a,vector_b].some(function(v) {return !((typeof(v) == "object") && Array.isArray(v))})) {
+  if ([vector_a,vector_b].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
    console.log("both arguments to dotProduct must be an array");
    return Number.NaN;
   }
@@ -81,12 +81,12 @@ MSLIB.Math = function() {
  };
  
  var unitLengthVector = function(arr) {
-  var total = arr.reduce(function(a,b){return a+b});
-  return (total ? arr.map(function(a){return a/total}) : arr);
+  var total = arr.reduce((a,b) => (a+b));
+  return (total ? arr.map((a) => (a/total)) : arr);
  };
  
  var sqrtVector = function(arr) {
-  return arr.map(function(a){return Math.sqrt(a)});
+  return arr.map((a) => Math.sqrt(a));
  };
  
  var sqrtUnitNormalisedSpectralContrastAngle = function(vector_a,vector_b) {
@@ -113,7 +113,7 @@ MSLIB.Math = function() {
   var padding = Array.apply(null,Array(mar)).map(Number.prototype.valueOf,0);
   var smth = padding.concat(arr,padding).map(function(ele,i,paddedarr) {
    if ((i >= mar) && ((i+mar) < paddedarr.length)) {
-    return paddedarr.slice(i-mar,i+mar+1).reduce(function(a,b) {return a+b})/(2*mar + 1);
+    return paddedarr.slice(i-mar,i+mar+1).reduce((a,b) => (a+b))/(2*mar + 1);
    }
    else {
     return 0;
@@ -126,7 +126,7 @@ MSLIB.Math = function() {
   if (!arr.length) return null;
   if (arr.length == 1) return [1];
   var plateau_start = -1;
-  var difference = [0].concat(arr.slice(1).map(function(ele,i){ return ele - arr[i]}));
+  var difference = [0].concat(arr.slice(1).map((ele,i) => (ele - arr[i])));
   if (allow_ends) { //don't report the ends of the array as maxima unless allow_ends set
    difference.unshift(1);
    difference.push(-1);

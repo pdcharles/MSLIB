@@ -5,7 +5,7 @@ if (typeof MSLIB.Data == 'undefined') MSLIB.Data = {};
 MSLIB.Data.Spectrum = function() {
 
  var Spectrum = function(mzs,ints) {
-  if ([mzs,ints].some(function(v) {return !((typeof(v) == "object") && Array.isArray(v))})) {
+  if ([mzs,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
    console.log("both arguments to Spectrum must be an array");
    return {};
   }
@@ -13,8 +13,8 @@ MSLIB.Data.Spectrum = function() {
    console.log("both arguments to Spectrum must be of equal length");
    return {};
   }
-  this.mzs = mzs.map(function(v){return parseFloat(v)});
-  this.ints = ints.map(function(v){return parseFloat(v)});
+  this.mzs = mzs.map((v) => parseFloat(v));
+  this.ints = ints.map((v) => parseFloat(v));
  }
 
  Spectrum.prototype.getCroppedSpectrum = function(mz_min,mz_max) {
@@ -57,7 +57,7 @@ MSLIB.Data.Spectrum = function() {
    return 0;
   }
   else {
-   return(this.ints.reduce(function(a,b){return a+b}));
+   return(this.ints.reduce((a,b) => a+b));
   }
  };
 
@@ -97,7 +97,7 @@ MSLIB.Data.Spectrum = function() {
     diffs.push([i,j,MSLIB.Math.avgPpmDiff(this.mzs[i],comparator.mzs[j])]);
    }
   }
-  diffs.sort(function(a,b) {return a[2] - b[2]});
+  diffs.sort((a,b) => a[2] - b[2]);
  
   var this_matched = [];
   for (var i in this.mzs) {
@@ -138,12 +138,12 @@ MSLIB.Data.Spectrum = function() {
    }
   }
  
-  this_matchlist.sort(function(a,b) {return a[0] - b[0]});
-  comp_matchlist.sort(function(a,b) {return a[0] - b[0]});
+  this_matchlist.sort((a,b) => a[0] - b[0]);
+  comp_matchlist.sort((a,b) => a[0] - b[0]);
  
   return ([
-           new Spectrum(this_matchlist.map(function(a){return a[0]}),this_matchlist.map(function(a){return a[1]})),
-           new Spectrum(comp_matchlist.map(function(a){return a[0]}),comp_matchlist.map(function(a){return a[1]}))
+           new Spectrum(this_matchlist.map((a) => a[0]),this_matchlist.map((a) => a[1])),
+           new Spectrum(comp_matchlist.map((a) => a[0]),comp_matchlist.map((a) => a[1]))
           ]);
  };
 

@@ -313,7 +313,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
      else {
       console.log("Error: Unrecognised mz/int order of binary data in mzML");
      }
-     this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter(function(mz,i) {return b[i]}),b.filter(function(inten,i) {return b[i]}));
+     this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter((mz,i) => b[i]),b.filter((inten,i) => b[i]));
      delete this.firstBinaryArray;
      MSLIB.Common.Finished.call(this.Parent);
     }
@@ -347,7 +347,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
       a.push(values[i+1]);
      }
     }
-    this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter(function(mz,i) {return b[i]}),b.filter(function(inten,i) {return b[i]}));
+    this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter((mz,i) => b[i]),b.filter((inten,i)  => b[i]));
     MSLIB.Common.Finished.call(this.Parent);
    }
    else {

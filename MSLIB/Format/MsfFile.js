@@ -35,7 +35,7 @@ MSLIB.Format.MsfFile = function() {
  
  MsfFile.prototype.getSpectrum = function(specID) {
   this.LastError = this.queryDB("select Spectrum from Spectra where UniqueSpectrumID = \""+specID+"\";")
-  MSLIB.Common.WaitUntil(function() {return this.Ready},(function() {
+  MSLIB.Common.WaitUntil(() => {this.Ready},(function() {
    var compressedBlob = new Blob([this.Query.Result.Data[0][0]], {type: 'application/octet-binary'});
    zip.createReader(
     new zip.BlobReader(compressedBlob),
@@ -55,7 +55,7 @@ MSLIB.Format.MsfFile = function() {
            values_int.push(peaks[i].getAttribute("Y"));
           }
           this.Query.Result.Spectrum = new MSLIB.Data.Spectrum(values_mz,values_int);
-          reader.close(function() {});
+          reader.close(() => {});
          }).bind(this)
         )
        }

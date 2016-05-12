@@ -22,7 +22,7 @@ MSLIB.Format.MsDataFile = function() {
 
  MsDataFile.prototype.getFirstScanNumber = function() {
   if (this.Scans.length) {
-   var s = this.Scans.findIndex(function(e) { return e != undefined });
+   var s = this.Scans.findIndex((ele) => (typeof(ele) != 'undefined'));
    return (s >= 0 ? s : null);
   }
   else {
@@ -74,7 +74,7 @@ MSLIB.Format.MsDataFile = function() {
   if (!this.Internal.Minutes.length) populateMinutes.call(this);
   var S = this.Scans; // can't use thisArg in sorts
   if (!S.length) return null;
-  var MS1ScanNumbers = S.filter(function(ele) { return ele.Scan.MsLevel == mslevel }).map(function(ele) {return ele.Scan.ScanNumber});
+  var MS1ScanNumbers = S.filter((ele) => (ele.Scan.MsLevel == mslevel)).map((ele) => ele.Scan.ScanNumber);
   var firstMSXRT = S[MS1ScanNumbers[0]].Scan.RetentionTime;
   var lastMSXRT = S[MS1ScanNumbers[MS1ScanNumbers.length-1]].Scan.RetentionTime;
   if (retention_time <= firstMSXRT) { return MS1ScanNumbers[0] };
@@ -83,31 +83,34 @@ MSLIB.Format.MsDataFile = function() {
   if (!this.Internal.Minutes[minute]) {
    console.log("Cannot localise RT "+retention_time);
   }
-  var possibles = this.Internal.Minutes[minute].filter(function(p) { return S[p].Scan.MsLevel == mslevel });
+  var possibles = this.Internal.Minutes[minute].filter((p) => (S[p].Scan.MsLevel == mslevel));
   //check for exact match
-  possibles.forEach(function(p) { if (S[p].Scan.RetentionTime == retention_time) { return p } });
-  //Otherwise find closest match
-  var firstRTMinute = Math.round(firstMSXRT);
-  var lastRTMinute = Math.round(lastMSXRT);
-  var range = 0;
-  do {
-   range++;
-   var minute_to_add = minute + (match_low ? -range : range);
-   if ((minute_to_add < firstRTMinute) || (minute_to_add > lastRTMinute)) {
-    return null;
-   }
-   possibles = possibles.concat(this.Internal.Minutes[minute_to_add].filter(function(p) { return S[p].Scan.MsLevel == mslevel }) || []);
-  } while (possibles.length < 1);
-  var m;
-  if (match_low) {
-   possibles.sort(function(a,b) { return S[b].Scan.RetentionTime-S[a].Scan.RetentionTime });
-   m = possibles.find(function(p) { return S[p].Scan.RetentionTime < retention_time });
-  }
+  var exact_match = possibles.find((p) => (S[p].Scan.RetentionTime == retention_time));
+  if (exact_match) { return exact_match }
   else {
-   possibles.sort(function(a,b) { return S[a].Scan.RetentionTime-S[b].Scan.RetentionTime });
-   m = possibles.find(function(p) { return S[p].Scan.RetentionTime > retention_time });
+   //Otherwise find closest match
+   var firstRTMinute = Math.round(firstMSXRT);
+   var lastRTMinute = Math.round(lastMSXRT);
+   var range = 0;
+   do {
+    range++;
+    var minute_to_add = minute + (match_low ? -range : range);
+    if ((minute_to_add < firstRTMinute) || (minute_to_add > lastRTMinute)) {
+     return null;
+    }
+    possibles = possibles.concat(this.Internal.Minutes[minute_to_add].filter((p) => (S[p].Scan.MsLevel == mslevel)) || []);
+   } while (possibles.length < 1);
+   var m;
+   if (match_low) {
+    possibles.sort((a,b) => (S[b].Scan.RetentionTime-S[a].Scan.RetentionTime));
+    m = possibles.find((p) => (S[p].Scan.RetentionTime < retention_time));
+   }
+   else {
+    possibles.sort((a,b) => (S[a].Scan.RetentionTime-S[b].Scan.RetentionTime));
+    m = possibles.find((p) => (S[p].Scan.RetentionTime > retention_time));
+   }
+   return typeof(m) != "undefined" ? m : null;
   }
-  return typeof(m) != "undefined" ? m : null;
  }
 
  MsDataFile.prototype.getNearestMSXRTfromRT = function(mslevel,retention_time,match_low) {

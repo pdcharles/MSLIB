@@ -71,7 +71,7 @@ MSLIB.Common = function(){
   if (this.BinaryBuffer && (pos >= this.BinaryBufferOffset) && ((pos + len) <= (this.BinaryBufferOffset+this.BinaryBuffer.byteLength))) {
    this.Position = pos + len;
    var bbpos = pos - this.BinaryBufferOffset;
-   WaitUntil(function(){return true},callback.bind({result: this.BinaryBuffer.slice(bbpos, bbpos + len), Parent: this.Parent, Position: this.Position}));
+   WaitUntil(() => true,callback.bind({result: this.BinaryBuffer.slice(bbpos, bbpos + len), Parent: this.Parent, Position: this.Position}));
   }
   else {
    if (this.BinaryBuffer) {

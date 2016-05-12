@@ -6,7 +6,7 @@ if (typeof MSLIB.Data == 'undefined') MSLIB.Data = {};
 MSLIB.Data.Chromatogram = function() {
 
  var Chromatogram = function(rts,ints,modulus) {
-  if ([rts,ints].some(function(v) {return !((typeof(v) == "object") && Array.isArray(v))})) {
+  if ([rts,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
    console.log("the first two arguments to MSLIB.Chromatogram must be an array");
    return {};
   }
@@ -14,8 +14,8 @@ MSLIB.Data.Chromatogram = function() {
    console.log("the first two arguments to MSLIB.Chromatogram must be of equal length");
    return {};
   }
-  this.rts = rts.map(function(v){return parseFloat(v)});
-  this.ints = ints.map(function(v){return parseFloat(v)});
+  this.rts = rts.map((v) => parseFloat(v));
+  this.ints = ints.map((v) => parseFloat(v));
   if (modulus) { //2D chromatograms!
    this.modulus = modulus;
   }
