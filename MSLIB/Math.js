@@ -122,9 +122,9 @@ MSLIB.Math = function() {
   return smth.slice(mar,smth.length-mar);
  }
 
- var maxima = function(arr,allow_ends) { //returns a binary vector of the same length where local maxima are indicated by 1s
+ var maxima = function(arr,allow_ends) { //returns a binary vector of the same length where local maxima are indicated by trues
   if (!arr.length) return null;
-  if (arr.length == 1) return [1];
+  if (arr.length == 1) return [true];
   var plateau_start = -1;
   var difference = [0].concat(arr.slice(1).map((ele,i) => (ele - arr[i])));
   if (allow_ends) { //don't report the ends of the array as maxima unless allow_ends set
@@ -132,11 +132,11 @@ MSLIB.Math = function() {
    difference.push(-1);
    plateau_start = 0;
   }
-  var is_max = difference.map(Number.prototype.valueOf,0); 
+  var is_max = difference.map(() => false); 
   difference.slice(1).forEach(function(diff,i) { //difference[i] is the *previous* difference for the current diff
    if (diff < 0) {
     if ((difference[i]) >= 0 && (plateau_start > -1)) {
-     is_max[Math.floor((i+plateau_start)/2)+1] = 1;
+     is_max[Math.floor((i+plateau_start)/2)+1] = true;
      plateau_start = -1; //end of a plateau
     } 
    }
