@@ -30,7 +30,7 @@ MSLIB.Format.TextTableFile = function () {
    function() {
     var text = this.result.replace(/\r\n?/gm,"\n");
     var lines = text.split("\n");
-    while (!lines[lines.length-1]) lines.pop(); // remove trailing blank lines
+    while (!lines[lines.length-1].length) lines.pop(); // remove trailing blank lines
     lines.forEach(function(line,i) {
      this.Parent.Progress = ((i/lines.length)*100).toFixed(2);
      if (this.Parent.Delimiter) {
@@ -38,7 +38,7 @@ MSLIB.Format.TextTableFile = function () {
       var fields = [];
       while (splitarr.length) {
        var field = splitarr.shift();
-       if (field.match(/^"/)) {
+       if (field.match(/^"/)) { //handle quoted fields
         while (!field.match(/"$/) && splitarr.length) {
          field += splitarr.shift();
         }
