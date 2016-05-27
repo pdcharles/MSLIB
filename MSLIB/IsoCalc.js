@@ -13,21 +13,21 @@ MSLIB.IsoCalc = function() {
   if ((typeof(params.isotopes) == "object") && Array.isArray(params.isotopes)) {
    if (params.isotopes.length) {
     var abundance_total = 0;
-    for (var i in params.isotopes) {
-     if (Array.isArray(params.isotopes[i]) && (params.isotopes[i].length == 2) && (typeof(params.isotopes[i][0]) == "number") && (typeof(params.isotopes[i][1]) == "number")) {
-      abundance_total += params.isotopes[i][1];
+    params.isotopes.forEach(function(isotope) {
+     if (Array.isArray(isotope) && (isotope.length == 2) && (typeof(isotope[0]) == "number") && (typeof(isotope[1]) == "number")) {
+      abundance_total += isotope[1];
      }
      else {
       console.log("isotopes parameter must be in form [[isotopologue1,abundance1],[isotopologue2,abundance2]] etc");
       return {};
      }    
-    }
+    });
     this.isotopes = [];
-    for (var i in params.isotopes) {
+    params.isotopes.forEach(function(isotope,i) {
      this.isotopes[i] = [];
-     this.isotopes[i][0] = params.isotopes[i][0];
-     this.isotopes[i][1] = params.isotopes[i][1]/abundance_total;
-    }
+     this.isotopes[i][0] = isotope[0];
+     this.isotopes[i][1] = isotope[1]/abundance_total;
+    },this);
    }
    else {
     console.log("isotopes parameter contains no data");
@@ -66,22 +66,22 @@ MSLIB.IsoCalc = function() {
    this.isotopes.map((i) => conv_ha.isotopes.map((j) => [i[0]+j[0],i[1]*j[1]]))
   );
   var isotope_hash = {};
-  for (var i in isotope_array) {
-   if (typeof(isotope_hash[isotope_array[i][0]]) == "undefined") {
-    isotope_hash[isotope_array[i][0]] = isotope_array[i][1];
+  isotope_array.forEach(function(isotope) {
+   if (typeof(isotope_hash[isotope[0]]) == "undefined") {
+    isotope_hash[isotope[0]] = isotope[1];
    }
    else {
-    isotope_hash[isotope_array[i][0]] += isotope_array[i][1];
+    isotope_hash[isotope[0]] += isotope[1];
    }
-  }
+  });
   var iso_hash_keys = Object.keys(isotope_hash).sort();
   var final_array = iso_hash_keys.map((i) => [parseFloat(i),isotope_hash[i]]);
   var final_array_filtered = final_array.filter((i) => (i[1] > FRACTION_LIMIT));
   return new Hyperatom({isotopes:final_array_filtered})
  }
- Hyperatom.prototype.with_charge = function(charge) {
-  var charged_array = this.isotopes.map((i) => [i[0]/charge,i[1]]);
-  return new Hyperatom({isotopes:charged_array})
+ Hyperatom.prototype.over_z = function(z) {
+  var isotopes_over_z = this.isotopes.map((i) => [i[0]/z,i[1]]);
+  return new Hyperatom({isotopes:isotopes_over_z})
  }
  Hyperatom.prototype.as_spectrum = function() {
   return new MSLIB.Data.Spectrum(this.isotopes.map((e) => e[0]),this.isotopes.map((e) => e[1]));
@@ -95,14 +95,14 @@ MSLIB.IsoCalc = function() {
   if (typeof(params.atoms) == "object") {
    var els = Object.keys(params.atoms);
    this.atoms = {};
-   for (var i in els) {
-    if ((typeof(els[i]) == "string") && (typeof(params.atoms[els[i]]) == "number")) {
-     var element = ElementalConstants.getElementName(els[i]);
+   Object.keys(params.atoms).forEach(function(ele) {
+    if ((typeof(ele) == "string") && (typeof(params.atoms[ele]) == "number")) {
+     var element = ElementalConstants.getElementName(ele);
      if (element) {
-      this.atoms[element] = params.atoms[els[i]];
+      this.atoms[element] = params.atoms[ele];
      }
      else {
-      console.log("element "+els[i]+" is unknown");
+      console.log("element "+ele+" is unknown");
       return {};
      }
     }
@@ -110,7 +110,7 @@ MSLIB.IsoCalc = function() {
      console.log("atoms parameter must be in form {element1:count1,element2:count2} etc");
      return {};
     }
-   }
+   },this);
   }
   else {
    console.log("atoms parameter undefined");
@@ -171,37 +171,30 @@ MSLIB.IsoCalc = function() {
     var validation_match = this.sequence.match(get_validation_pattern());
     if (validation_match) {
      this.atoms = {};
-     for (var i in water.atoms) {
-      this.atoms[i] = water.atoms[i];
-     }
+     Object.keys(water.atoms).forEach(function(ele) {
+      this.atoms[ele] = water.atoms[ele];
+     },this);
      Object.keys(AminoAcids).forEach(function(aa) {
       var aa_matches = this.sequence.match(AminoAcids[aa].lettercode);
       if (aa_matches) {
        var aa_count = aa_matches.length;
        var atom_keys = Object.keys(AminoAcids[aa].atoms);
-       for (var j in atom_keys) {
-        var aa_atoms = (aa_count * AminoAcids[aa].atoms[atom_keys[j]]);
-        if (typeof(this.atoms[atom_keys[j]]) == "undefined") {
-         this.atoms[atom_keys[j]] = aa_atoms;
-        }
-        else {
-         this.atoms[atom_keys[j]] += aa_atoms;
-        }
-       }
+       Object.keys(AminoAcids[aa].atoms).forEach(function(ele) {
+        var aa_atoms = (aa_count * AminoAcids[aa].atoms[ele]);
+        if (typeof(this.atoms[ele]) == "undefined") this.atoms[ele] = aa_atoms;
+        else this.atoms[ele] += aa_atoms;
+       },this);
       }
      },this);
      if (typeof(params.modifications) != "undefined") {
-      if ((typeof(params.modifications) == "object") && Array.isArray(params.modifications) && !params.modifications.map((a) => ((typeof(a) != "object") || (a.constructor !== Modification))).reduce((a,b) => (a+b))) {
+      if ((typeof(params.modifications) == "object") && Array.isArray(params.modifications) && !params.modifications.map((a) => ((typeof(a) != "object") || (a.constructor !== Modification))).reduce((a,b) => (a+b),0)) {
        this.modifications = params.modifications;
-       for (var i in params.modifications) {
-        var atom_keys = Object.keys(params.modifications[i].atoms);
-        for (var j in atom_keys) {
-         if (typeof(this.atoms[atom_keys[j]]) == "undefined") {
-          this.atoms[atom_keys[j]] = 0;
-         }
-         this.atoms[atom_keys[j]] += (params.modifications[i].atoms[atom_keys[j]]);
-        }       
-       }
+       this.modifications.forEach(function(mod) {
+        Object.keys(mod.atoms).forEach(function(ele) {
+         if (typeof(this.atoms[ele]) == "undefined") this.atoms[ele] = mod.atoms[ele];
+         else this.atoms[ele] += mod.atoms[ele];
+        },this);      
+       },this);
       }
       else {
        console.log("modifications parameter must be an array of Modification objects");
@@ -211,9 +204,6 @@ MSLIB.IsoCalc = function() {
      if (typeof(params.charge) != "undefined") {
       if ((typeof(params.charge) == "number") && !isNaN(params.charge) && (function(x){return (x|0)===x;})(parseFloat(params.charge))) {
        this.charge = params.charge;
-       if (params.charge > 0) {
-        this.atoms["Hydrogen"] += this.charge;
-       }
       }
       else {
        console.log("charge parameter must be an integer");
@@ -239,128 +229,122 @@ MSLIB.IsoCalc = function() {
    return {};
   }
  }
- Peptide.prototype.calculate_distribution = function(altEleConst) {
-  var atom_keys = Object.keys(this.atoms);
-  this.distribution = new Hyperatom({isotopes:[[0,1]]});
-  for (var i in atom_keys) {
-   var atom = atom_keys[i];
-   var hyperatom_required = this.atoms[atom];
-   if (!hyperatom_required) {
-    continue;
+ Peptide.prototype.get_distribution = function(altEleConst) {
+  var distribution = new Hyperatom({isotopes:[[0,1]]});
+  Object.keys(this.atoms).forEach(function(ele) {
+   var hyperatom_required = this.atoms[ele];
+   if (this.charge >0 && ele == "Hydrogen") {
+    hyperatom_required += this.charge;
    }
-   var bin_array = hyperatom_required.toString(2).split("").reverse().map((j) => parseInt(j));
-   var max_exp = bin_array.length-1;
-   var intermediate_hyperatom = {};
-   if (altEleConst && altEleConst[atom]) {
-    intermediate_hyperatom[0] = new Hyperatom({isotopes:altEleConst[atom].isotopes});
-   }
-   else {
-    intermediate_hyperatom[0] = new Hyperatom({isotopes:ElementalConstants[atom].isotopes});
-   }
-   for (var j = 0; j < max_exp; j++) {
-    intermediate_hyperatom[j+1] = intermediate_hyperatom[j].convolute(intermediate_hyperatom[j]);
-   }
-   var hyperatom = intermediate_hyperatom[max_exp];
-   for (var j = 0; j < max_exp; j++) {
-    if (bin_array[j]) {
-     hyperatom = hyperatom.convolute(intermediate_hyperatom[j]);
+   if (hyperatom_required) {
+    var bin_array = hyperatom_required.toString(2).split("").reverse().map((i) => parseInt(i));
+    var max_exp = bin_array.length-1;
+    var intermediate_hyperatom = {};
+    if (altEleConst && altEleConst[ele]) {
+     intermediate_hyperatom[0] = new Hyperatom({isotopes:altEleConst[ele].isotopes});
     }
+    else {
+     intermediate_hyperatom[0] = new Hyperatom({isotopes:ElementalConstants[ele].isotopes});
+    }
+    for (var i = 0; i < max_exp; i++) {
+     intermediate_hyperatom[i+1] = intermediate_hyperatom[i].convolute(intermediate_hyperatom[i]);
+    }
+    var hyperatom = intermediate_hyperatom[max_exp];
+    for (var i = 0; i < max_exp; i++) {
+     if (bin_array[i]) {
+      hyperatom = hyperatom.convolute(intermediate_hyperatom[i]);
+     }
+    }
+   distribution = distribution.convolute(hyperatom);
    }
-   this.distribution = this.distribution.convolute(hyperatom);
-  }
+  },this);
   if (this.charge) {
-   this.distribution = this.distribution.with_charge(this.charge);
+   distribution = distribution.over_z(this.charge);
+   distribution.charge = this.charge
   }
+  return distribution;
  }
  Peptide.prototype.get_centroided_distribution = function(ppm_gap,altEleConst) {
   if (typeof(ppm_gap) != "number") {
    console.log("Must provide ppm gap argument as a number")
    return {};
   }
-  if (typeof(this.distribution) != "object") {
-   this.calculate_distribution(altEleConst);
-  }
- // First, find maxima
-  var a = this.distribution.isotopes;
-  var g = [1];
-  for (var i = 1; i < a.length; i++) {
-   g[i] = a[i][1] - a[i-1][1];
-  }
-  var u = 0;
-  var is_max = g.map(Number.prototype.valueOf,0);
-  for (var i = 1; i < g.length; i++) {
-   if (g[i] < 0) {
-    if ((g[i-1]) >= 0 && (u > -1)) {
-     is_max[Math.floor((i+u-1)/2)] = 1;
-    }
-    u = -1;
+
+  var max_gap_ratio = (ppm_gap / 1e6);
+  var isotopes = this.get_distribution(altEleConst).isotopes;
+
+  // Find maxima
+  var is_max = MSLIB.Math.maxima(isotopes.map(iso => iso[1]),true);
+
+//  console.log(is_max.map(m => (m ? 1 : 0)));
+   
+  // Add any peaks separated from all others by more than max_gap as maxima
+  isotopes.forEach(function(iso,i) {
+   if (((i == 0) || (((iso[0] - isotopes[i-1][0])/iso[0]) > max_gap_ratio)) && ((i == (isotopes.length-1)) || (((isotopes[i+1][0] - iso[0])/iso[0]) > max_gap_ratio))) {
+    is_max[i] = true;
    }
-   else if (g[i] > 0) {
-    u = i;
-   }
-  }
-  var first_max;
-  for (var i = 0; i < a.length; i++) {
-   if (is_max[i]) {
-    first_max = i;
-    break;
-   }
-  }
-  var last_max;
-  for (var i = a.length-1; i >= 0; i--) {
-   if (is_max[i]) {
-    last_max = i;
-    break;
-   }
-  }
- // Then, group to closest maxima
-  if (first_max == last_max) {
-   console.log(first_max,last_max)
+  });
+ 
+//  console.log("*****");
+//  console.log(is_max.map(m => (m ? 1 : 0)));
+  
+  // Early finish if only one maxima
+  if (is_max.reduce((a,b) => a+b) == 1) {
+//   console.log(first_max,last_max)
    return new Hyperatom({isotopes:[centroid(a)]});
   }
+
+  // Then group to closest maxima
   var groups = [[]];
   var maxima = [];
-  for (var i in a) {
+
+  isotopes.forEach(function(iso,i) {
    if (is_max[i]) {
-    maxima.push(a[i][0]);
+    maxima.push(i);
    }
-  }
-  var m = 0;
-  for (var i in a) {
-   if (i < first_max) {
-    groups[0].push(a[i]);
+  });
+
+//  console.log(maxima.map(i => isotopes[i]));
+
+  isotopes.forEach(function(iso,i) {
+   if (i < maxima[0]) {
+    groups[0].push(iso);
    }
-   else if (i > last_max) {
-    groups[m-1].push(a[i]);
+   else if (i > maxima[maxima.length-1]) {
+    groups[groups.length-1].push(iso);
    }
    else if (is_max[i]) {
-    groups[m].push(a[i]);
-    m++;
-    groups[m] = [];
-   }
-   else if ((a[i][0]-maxima[m-1]) <= (maxima[m]-a[i][0])) {
-    groups[m-1].push(a[i]);
+    groups[groups.length-1].push(iso);
+    if (groups.length < maxima.length) groups.push([]);
    }
    else {
-    groups[m].push(a[i]);
+    groups[groups.length-1-((iso[0]-isotopes[maxima[groups.length-2]][0]) <= (isotopes[maxima[groups.length-1]][0]-iso[0]))].push(iso);
    }
-  }
-  groups = groups.slice(0,m);
-  var centroided_groups = groups.map((i) => centroid(i));
+  });
+
+//  console.log(groups);
+
+  var centroided_groups = groups.map((g) => centroid(g));
+
+//  console.log(centroided_groups);
  
   //Then, group maxima closer than ppm_gap
-  var grouped_centroided_groups = [[centroided_groups[0]]];
-  var max_gap = (ppm_gap / 1e6);
+  var grouped_cgs = [[centroided_groups[0]]];
+  
   for (var i = 1; i < centroided_groups.length; i++) {
-   if ((centroided_groups[i][0] - centroided_groups[i-1][0])/centroided_groups[i][0] <= max_gap) {
-    grouped_centroided_groups[grouped_centroided_groups.length-1].push(centroided_groups[i]);
+   if ((centroided_groups[i][0] - centroided_groups[i-1][0])/centroided_groups[i][0] <= max_gap_ratio) {
+    grouped_cgs[grouped_cgs.length-1].push(centroided_groups[i]);
    }
    else {
-    grouped_centroided_groups[grouped_centroided_groups.length] = [centroided_groups[i]];
+    grouped_cgs[grouped_cgs.length] = [centroided_groups[i]];
    }
   }
-  var final_centroids = grouped_centroided_groups.map((i) => centroid(i));
+
+  var final_centroids = grouped_cgs.map((i) => centroid(i));
+
+  //Finally, remove any peaks representing less than 1% total intensity
   final_centroids = final_centroids.filter((i) => (i[1] > 0.01));
+
   return(new Hyperatom({isotopes:final_centroids}));
  }
  
@@ -384,39 +368,74 @@ MSLIB.IsoCalc = function() {
   }
  };
 
+ //Using Fan et al constants
  ElementalConstants["Carbon"]   = new Atom({
                                              symbol: "C",
                                              isotopes:[
-                                              [12.0000000,  98.8930],
-                                              [13.0033554,   1.0700]
+                                              [12.0000000,  98.93],
+                                              [13.0033554,   1.07]
                                              ]});
  ElementalConstants["Hydrogen"] = new Atom({
                                              symbol: "H",
                                              isotopes:[
-                                              [ 1.0078246,  99.9850],
-                                              [ 2.0141021,   0.0150]
+                                              [ 1.0078246,  99.985],
+                                              [ 2.0141021,   0.015]
                                              ]});
  ElementalConstants["Nitrogen"] = new Atom({
                                              symbol: "N",
                                              isotopes:[
-                                              [14.0030732,  99.6320],
-                                              [15.0001088,   0.3680]
+                                              [14.0030732,  99.632],
+                                              [15.0001088,   0.368]
                                              ]});
  ElementalConstants["Oxygen"]   = new Atom({
                                              symbol: "O",
                                              isotopes:[
-                                              [15.9949141,  99.7590],
-                                              [16.9991322,   0.0374],
-                                              [17.9991616,   0.2036]
+                                              [15.9949141,  99.757],
+                                              [16.9991322,   0.038],
+                                              [17.9991616,   0.205]
                                              ]});
  ElementalConstants["Sulphur"]  = new Atom({
                                              symbol: "S",
                                              isotopes:[
-                                              [31.9720700,  95.0200],
-                                              [32.9720700,   0.7500],
-                                              [33.9678660,   4.2100],
-                                              [35.9670800,   0.0200]
+                                              [31.9720700,  95.02],
+                                              [32.9720700,   0.75],
+                                              [33.9678660,   4.21],
+                                              [35.9670800,   0.02]
                                              ]});
+
+// ElementalConstants["Carbon"]   = new Atom({
+//                                             symbol: "C",
+//                                             isotopes:[
+//                                              [12.0000000,  98.8930],
+//                                              [13.0033554,   1.0700]
+//                                             ]});
+// ElementalConstants["Hydrogen"] = new Atom({
+//                                             symbol: "H",
+//                                             isotopes:[
+//                                              [ 1.0078246,  99.9850],
+//                                              [ 2.0141021,   0.0150]
+//                                             ]});
+// ElementalConstants["Nitrogen"] = new Atom({
+//                                             symbol: "N",
+//                                             isotopes:[
+//                                              [14.0030732,  99.6320],
+//                                              [15.0001088,   0.3680]
+//                                             ]});
+// ElementalConstants["Oxygen"]   = new Atom({
+//                                             symbol: "O",
+//                                             isotopes:[
+//                                              [15.9949141,  99.7590],
+//                                              [16.9991322,   0.0374],
+//                                              [17.9991616,   0.2036]
+//                                             ]});
+// ElementalConstants["Sulphur"]  = new Atom({
+//                                             symbol: "S",
+//                                             isotopes:[
+//                                              [31.9720700,  95.0200],
+//                                              [32.9720700,   0.7500],
+//                                              [33.9678660,   4.2100],
+//                                              [35.9670800,   0.0200]
+//                                             ]});
  
  var water = new Molecule({atoms:{Hydrogen:2,Oxygen:1}});
  
@@ -596,7 +615,7 @@ MSLIB.IsoCalc = function() {
  }
  
  var centroid = function(arr) {
-  if ((typeof(arr) == "object") && Array.isArray(arr) && !arr.map((a) => ((typeof(a) != "object") || !Array.isArray(a))).reduce((a,b) => (a+b))) {
+  if ((typeof(arr) == "object") && Array.isArray(arr) && arr.every((a) => ((typeof(a) == "object") && Array.isArray(a)))) {
    var tot_int = arr.reduce((acc,ele) => (acc+ele[1]), 0);
    var weighted_mean_mass = arr.reduce((acc,ele) => (acc+(ele[0]*ele[1])/tot_int), 0);
    return [weighted_mean_mass,tot_int];
