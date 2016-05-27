@@ -39,9 +39,8 @@ MSLIB.Common = function(){
   }
   r.Parent = parent;
   r.Position = 0;
-  r.Report = 0;
+  r.Report = false;
   r.onerror = function(e) {console.log("Error: In file " + e.target.File + " -  " + e.target.error)};
-  //r.getFileSlice = getFileSlice;
   r.readBinary = readBinary;
   r.readText = readText;
   return r;
@@ -67,48 +66,47 @@ MSLIB.Common = function(){
  }
 
  var readBinary = function(callback,pos,len,saveAsBuffer) {
+  return readAs.call(this,this.readAsArrayBuffer,callback,pos,len,saveAsBuffer);
+ }
+
+ var readText = function(callback,pos,len,saveAsBuffer) {
+  return readAs.call(this,this.readAsText,callback,pos,len,saveAsBuffer);
+ }
+
+ var readAs = function(method,callback,pos,len,saveAsBuffer) {
   if (this.readyState == 1) return("ReaderNotReady");
-  if (this.BinaryBuffer && (pos >= this.BinaryBufferOffset) && ((pos + len) <= (this.BinaryBufferOffset+this.BinaryBuffer.byteLength))) {
+  if (this.PreloadBufferSize && (pos >= this.PreloadBufferOffset) && ((pos + len) <= (this.PreloadBufferOffset+this.PreloadBufferSize))) {
    this.Position = pos + len;
-   var bbpos = pos - this.BinaryBufferOffset;
-   WaitUntil(() => true,callback.bind({result: this.BinaryBuffer.slice(bbpos, bbpos + len), Parent: this.Parent, Position: this.Position}));
+   var bbpos = pos - this.PreloadBufferOffset;
+   //Return a pseudo reader element contaning result, parent and position.  Can't call reader methods on it though (would require duplication)
+   WaitUntil(() => true,callback.bind({result: this.PreloadBuffer.slice(bbpos, bbpos + len), Parent: this.Parent, Position: this.Position}));
   }
   else {
-   if (this.BinaryBuffer) {
-    if (this.Report) console.log(">>>>>Clear BinaryBuffer<<<<<");
-    delete this.BinaryBuffer;
-    delete this.BinaryBufferOffset;
+   if (this.PreloadBufferSize) {
+    if (this.Report) console.log(">>>>>Requested bytes "+pos+" to "+(pos+len)+" - Clear PreloadBuffer<<<<<");
+    delete this.PreloadBuffer;
+    delete this.PreloadBufferOffset;
+    delete this.PreloadBufferSize;
    }
    var fS = getFileSlice.call(this,pos,len);
    if (fS) {
     if (saveAsBuffer) {
-     if (this.Report) console.log(">>>>>Load bytes "+pos+" to "+this.Position+" into BinaryBuffer<<<<<");
+     if (this.Report) console.log(">>>>>Load bytes "+pos+" to "+this.Position+" into PreloadBuffer<<<<<");
+     this.PreloadBufferOffset = pos;
+     this.PreloadBufferSize = len;
      this.onloadend = (function() {
-      this.BinaryBuffer = this.result.slice(0);
-      this.BinaryBufferOffset = this.Position - this.BinaryBuffer.byteLength;
+      this.PreloadBuffer = this.result.slice(0);  //slice is conveniently defined as a function for both String and ArrayBuffer
       callback.call(this);
      }).bind(this);
     }
     else {
      this.onloadend = callback.bind(this);
     }
-    this.readAsArrayBuffer(fS);
+    method.call(this,fS);
    }
    else {
     return("ReaderInvalidFileSlice");
    }
-  }
- }
-
- var readText = function(callback,pos,len) {
-  if (this.readyState == 1) return("ReaderNotReady");
-  var fS = getFileSlice.call(this,pos,len);
-  if (fS) {
-   this.onloadend = callback.bind(this);
-   this.readAsText(fS);
-  }
-  else {
-   return("ReaderInvalidFileSlice");
   }
  }
 
