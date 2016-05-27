@@ -82,8 +82,8 @@ MSLIB.Data.Spectrum = function() {
  };
 
  Spectrum.prototype.getMatchedSpectra = function(comparator,mzPPMError) {
-  if ((typeof(comparator) != "object") || (comparator.constructor !== this.constructor)) {
-   console.log("can only getMatchedMz from another Spectrum");
+  if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
+   console.log("can only getMatchedSpectra against another Spectrum (or object with mzs and int)");
    return Number.NaN;
   } 
   if (typeof(mzPPMError) == "undefined") {
@@ -148,8 +148,8 @@ MSLIB.Data.Spectrum = function() {
  };
 
  Spectrum.prototype.getNormalisedSpectralContrastAngleTo = function(comparator,mzPPMError) {
-  if ((typeof(comparator) != "object") || (comparator.constructor !== this.constructor)) {
-   console.log("can only getNormalisedSpectralContrastAngleTo another Spectrum");
+  if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
+   console.log("can only getNormalisedSpectralContrastAngleTo another Spectrum (or object with mzs and int)");
    return Number.NaN;
   }
   if (typeof(mzPPMError) == "undefined") {
