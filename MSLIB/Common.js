@@ -40,9 +40,11 @@ MSLIB.Common = function(){
   r.Parent = parent;
   r.Position = 0;
   r.Report = false;
-  r.onerror = function(e) {console.log("Error: In file " + e.target.File + " -  " + e.target.error)};
+  r.onerror = function(e) { console.log("Error: In file " + e.target.File + " -  " + e.target.error) };
   r.readBinary = readBinary;
   r.readText = readText;
+  r.Progress = 0;
+  r.onprogress = function(e) { r.Progress = (e.loaded/e.total)*100 };
   return r;
  };
 
