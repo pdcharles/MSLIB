@@ -3,7 +3,7 @@
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Data == 'undefined') MSLIB.Data = {};
 
-MSLIB.Data.Chromatogram = function() {
+MSLIB.Data.Chromatogram = function _SOURCE() {
 
  var Chromatogram = function(rts,ints,modulus) {
   if ([rts,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
@@ -61,6 +61,8 @@ MSLIB.Data.Chromatogram = function() {
    return Math.max.apply(null,this.ints);
   }
  }
+
+ Chromatogram._SOURCE = _SOURCE;
 
  return Chromatogram;
 

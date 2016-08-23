@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Data == 'undefined') MSLIB.Data = {};
-MSLIB.Data.Spectrum = function() {
+MSLIB.Data.Spectrum = function _SOURCE() {
 
  var Spectrum = function(mzs,ints) {
   if ([mzs,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
@@ -15,14 +15,25 @@ MSLIB.Data.Spectrum = function() {
   }
   this.mzs = mzs.map((v) => parseFloat(v));
   this.ints = ints.map((v) => parseFloat(v));
+  if (!this.mzs.every((e,i,a) => i == 0 || a[i-1] <= e)) {
+   console.log("mzs provided for Spectrum must be sorted in ascending order");
+   console.log(this.mzs);
+   return {};
+  }
  }
 
+ Spectrum.prototype.clone = function() {
+  return new Spectrum(this.mzs,this.ints);
+ };
+
  Spectrum.prototype.getCroppedSpectrum = function(mz_min,mz_max) {
-  //maybe replace this with a slice?
-  function crop_filter(ele,i) {
-   return((this.mzs[i] >= mz_min) && (this.mzs[i] <= mz_max));
-  }
-  return new Spectrum(this.mzs.filter(crop_filter.bind(this)),this.ints.filter(crop_filter.bind(this)),1);
+  var mask = this.mzs.map((ele,i) => ((ele >= mz_min) && (ele <= mz_max)));
+  var start = mask.indexOf(true);
+  var end = mask.lastIndexOf(true);
+  return new Spectrum(
+   this.mzs.slice(start,end+1),
+   this.ints.slice(start,end+1)
+  )
  };
 
  Spectrum.prototype.getMinMz = function() {
@@ -158,6 +169,8 @@ MSLIB.Data.Spectrum = function() {
   var matched_spectra = this.getMatchedSpectra(comparator,mzPPMError);
   return MSLIB.Math.sqrtUnitNormalisedSpectralContrastAngle(matched_spectra[0].ints,matched_spectra[1].ints);
  };
+
+ Spectrum._SOURCE = _SOURCE;
 
  return Spectrum;
 

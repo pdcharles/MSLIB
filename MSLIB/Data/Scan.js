@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Data == 'undefined') MSLIB.Data = {};
-MSLIB.Data.Scan = function() {
+MSLIB.Data.Scan = function _SOURCE() {
  var Scan = function() {
   this.ScanNumber           = null;
   this.MsLevel              = null;
@@ -21,5 +21,8 @@ MSLIB.Data.Scan = function() {
   this.Internal             = {};
   this.Spectrum             = null;
  };
+
+ Scan._SOURCE = _SOURCE;
+
  return Scan;
 }();

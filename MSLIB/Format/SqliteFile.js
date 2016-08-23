@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-if (typeof SQL) MSLIB.Format.SQLiteFile = function() {
+if (typeof SQL) MSLIB.Format.SQLiteFile = function _SOURCE() {
 
  var SQLiteFile = function(f) {
   if (!f) {
@@ -24,22 +24,21 @@ if (typeof SQL) MSLIB.Format.SQLiteFile = function() {
  };
 
  SQLiteFile.prototype.openDB = function() {
-  MSLIB.Common.Starting.call(this);
+  MSLIB.Common.starting.call(this);
   this.LastError = this.Reader.readBinary(
    function() {
     this.Parent.Database = new SQL.Database(new Uint8Array(this.result));
-    MSLIB.Common.Finished.call(this.Parent);
-   },
-   0
+    MSLIB.Common.finished.call(this.Parent);
+   }
   );
  }
 
  SQLiteFile.prototype.queryDB = function(q) {
   if (!this.Ready) return("SQLiteFileNotReady");
   if (!this.Database) return("SQLiteFileDatabaseNotOpen");
-  MSLIB.Common.Starting.call(this);
+  MSLIB.Common.starting.call(this);
   this.Query.SQL = q.replace(/\n/g, '; ');
-  MSLIB.Common.WaitUntil(function() {return true}, (function() {
+  MSLIB.Common.waitUntil(function() {return true}, (function() {
     this.Query.Result = {};
     try {
      var jsondata = this.Database.exec(this.Query.SQL);
@@ -49,10 +48,12 @@ if (typeof SQL) MSLIB.Format.SQLiteFile = function() {
     catch(err) {
      console.log("Error: " + err);
     }
-    MSLIB.Common.Finished.call(this);
+    MSLIB.Common.finished.call(this);
    }).bind(this)
   );
  };
+
+ SQLiteFile._SOURCE = _SOURCE;
 
  return SQLiteFile;
 

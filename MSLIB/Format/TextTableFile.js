@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-MSLIB.Format.TextTableFile = function () {
+MSLIB.Format.TextTableFile = function _SOURCE() {
  
  var TextTableFile = function(f) {
   this.Reader                 = new MSLIB.Common.Reader(f,this);
@@ -25,11 +25,10 @@ MSLIB.Format.TextTableFile = function () {
  };
  
  TextTableFile.prototype.load = function() {
-  MSLIB.Common.Starting.call(this);
+  MSLIB.Common.starting.call(this);
   this.LastError = this.Reader.readText(
    function() {
-    var text = this.result.replace(/\r\n?/gm,"\n");
-    var lines = text.split("\n");
+    var lines = this.result.replace(/\r\n?/gm,"\n").split("\n");
     while (!lines[lines.length-1].length) lines.pop(); // remove trailing blank lines
     lines.forEach(function(line,i) {
      this.Parent.Progress = ((i/lines.length)*100).toFixed(2);
@@ -55,11 +54,12 @@ MSLIB.Format.TextTableFile = function () {
     if (this.Parent.UseFirstLineAsHeaders && this.Parent.Lines.length && !this.Parent.Headers.length) {
      this.Parent.Headers = this.Parent.Lines.shift();
     }
-    MSLIB.Common.Finished.call(this.Parent);
-   },
-   0
+    MSLIB.Common.finished.call(this.Parent);
+   }
   );
  };
+
+ TextTableFile._SOURCE = _SOURCE;
 
  return TextTableFile;
 

@@ -1,7 +1,7 @@
 "use strict";
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
-MSLIB.IsoCalc = function() {
+MSLIB.IsoCalc = function _SOURCE() {
 
  var FRACTION_LIMIT = 0.000001;
  
@@ -61,8 +61,7 @@ MSLIB.IsoCalc = function() {
    console.log("can only convolute with another Hyperatom");
    return {};
   }
-  var isotope_array = [];
-  isotope_array = isotope_array.concat.apply(isotope_array,
+  var isotope_array = Array.prototype.concat.apply([],
    this.isotopes.map((i) => conv_ha.isotopes.map((j) => [i[0]+j[0],i[1]*j[1]]))
   );
   var isotope_hash = {};
@@ -74,17 +73,16 @@ MSLIB.IsoCalc = function() {
     isotope_hash[isotope[0]] += isotope[1];
    }
   });
-  var iso_hash_keys = Object.keys(isotope_hash).sort();
-  var final_array = iso_hash_keys.map((i) => [parseFloat(i),isotope_hash[i]]);
-  var final_array_filtered = final_array.filter((i) => (i[1] > FRACTION_LIMIT));
-  return new Hyperatom({isotopes:final_array_filtered})
+  var final_array = Object.keys(isotope_hash).map((i) => [parseFloat(i),isotope_hash[i]]);
+  var final_array_filtered_and_sorted = final_array.filter((i) => (i[1] > FRACTION_LIMIT)).sort((a,b) => (a[0]-b[0]));
+  return new Hyperatom({isotopes:final_array_filtered_and_sorted})
  }
- Hyperatom.prototype.over_z = function(z) {
+ Hyperatom.prototype.overZ = function(z) {
   var isotopes_over_z = this.isotopes.map((i) => [i[0]/z,i[1]]);
   return new Hyperatom({isotopes:isotopes_over_z})
  }
- Hyperatom.prototype.as_spectrum = function() {
-  return new MSLIB.Data.Spectrum(this.isotopes.map((e) => e[0]),this.isotopes.map((e) => e[1]));
+ Hyperatom.prototype.asSpectrum = function() {
+  return new MSLIB.Data.Spectrum(this.isotopes.map(e => e[0]),this.isotopes.map(e => e[1]));
  }
  
  var Molecule = function(params) {
@@ -168,7 +166,7 @@ MSLIB.IsoCalc = function() {
   if (typeof(params.sequence) != "undefined") {
    if (typeof(params.sequence) == "string") {
     this.sequence = params.sequence;
-    var validation_match = this.sequence.match(get_validation_pattern());
+    var validation_match = this.sequence.match(getValidationPattern());
     if (validation_match) {
      this.atoms = {};
      Object.keys(water.atoms).forEach(function(ele) {
@@ -229,7 +227,7 @@ MSLIB.IsoCalc = function() {
    return {};
   }
  }
- Peptide.prototype.get_distribution = function(altEleConst) {
+ Peptide.prototype.getDistribution = function(altEleConst) {
   var distribution = new Hyperatom({isotopes:[[0,1]]});
   Object.keys(this.atoms).forEach(function(ele) {
    var hyperatom_required = this.atoms[ele];
@@ -259,19 +257,20 @@ MSLIB.IsoCalc = function() {
    }
   },this);
   if (this.charge) {
-   distribution = distribution.over_z(this.charge);
+   distribution = distribution.overZ(this.charge);
    distribution.charge = this.charge
   }
+  distribution
   return distribution;
  }
- Peptide.prototype.get_centroided_distribution = function(ppm_gap,altEleConst) {
+ Peptide.prototype.getCentroidedDistribution = function(ppm_gap,altEleConst) {
   if (typeof(ppm_gap) != "number") {
    console.log("Must provide ppm gap argument as a number")
    return {};
   }
 
   var max_gap_ratio = (ppm_gap / 1e6);
-  var isotopes = this.get_distribution(altEleConst).isotopes;
+  var isotopes = this.getDistribution(altEleConst).isotopes;
 
   // Find maxima
   var is_max = MSLIB.Math.maxima(isotopes.map(iso => iso[1]),true);
@@ -603,7 +602,7 @@ MSLIB.IsoCalc = function() {
                                                Oxygen  : 1
                                               }});
  
- var get_validation_pattern = function() {
+ var getValidationPattern = function() {
   var available_lettercodes = {};
   Object.keys(AminoAcids).forEach(function(aa) {
    if (typeof(available_lettercodes[AminoAcids[aa].lettercode.source]) != "undefined") {
@@ -632,7 +631,8 @@ MSLIB.IsoCalc = function() {
   Modification: Modification,
   Atom : Atom,
   Hyperatom : Hyperatom,
-  Peptide: Peptide
+  Peptide: Peptide,
+  _SOURCE: _SOURCE
  }
 
 }();

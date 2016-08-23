@@ -1,32 +1,34 @@
 "use strict";
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
-MSLIB.Common = function(){
+MSLIB.Common = function _SOURCE(){
 
  //Implement a fast ready-wait as 4ms minimum window.setTimeout is too slow
  //http://dbaron.org/log/20100309-faster-timeouts
 
  var WaitStack = [];
- var WaitUntil = function(tfunc,rfunc) {
+ var waitUntil = function(tfunc,rfunc) {
   WaitStack.push([tfunc,rfunc])
-  window.postMessage("WaitUntil", "*");
+  if (self.document === undefined) self.postMessage("WaitUntilPing");
+  else self.postMessage("WaitUntilEcho", "*");
  }
 
- window.addEventListener("message", function(e) {
-  if (e.source == window && e.data == "WaitUntil") {
-   e.stopPropagation();
+ self.addEventListener("message", function(e) {
+  if (e.data == "WaitUntilEcho") {
+   e.stopImmediatePropagation();
    if (WaitStack.length > 0) {
     var args = WaitStack.shift();
     if (args[0]()) args[1]();
     else {
      WaitStack.push([args[0],args[1]])
-     window.postMessage("WaitUntil", "*");
+     if (self.document === undefined) self.postMessage("WaitUntilPing");
+     else self.postMessage("WaitUntilEcho", "*");
     }
    }
   }
- },true);
+ });
 
- if (!(window.File && window.FileReader && window.FileList && window.Blob)) console.log("Warning: Reader requires full File API support!");
+ if (!(self.File && self.FileReader && self.Blob)) console.log("Warning: Reader requires full File API support!");
  
  var Reader = function(f,parent) {
   var r = new FileReader();
@@ -40,7 +42,7 @@ MSLIB.Common = function(){
   r.Parent = parent;
   r.Position = 0;
   r.Report = false;
-  r.onerror = function(e) { console.log("Error: In file " + e.target.File + " -  " + e.target.error) };
+  r.onerror = function(e) { console.log("Error: In file " + e.target.File.name + " - " + e.target.error.message) };
   r.readBinary = readBinary;
   r.readText = readText;
   r.Progress = 0;
@@ -55,7 +57,7 @@ MSLIB.Common = function(){
   }
   else {
    var fS;
-   if ((len != null) && (len < (this.File.size - pos))) {
+   if (len && (len < (this.File.size - pos))) {
     fS = this.File.slice(pos, pos + len);
     this.Position = pos + len;
    }
@@ -67,43 +69,42 @@ MSLIB.Common = function(){
   }
  }
 
- var readBinary = function(callback,pos,len,saveAsBuffer) {
-  return readAs.call(this,this.readAsArrayBuffer,callback,pos,len,saveAsBuffer);
+ var readBinary = function(callback,pos,len) {
+  return readAs.call(this,this.readAsArrayBuffer,callback,pos,len);
  }
 
- var readText = function(callback,pos,len,saveAsBuffer) {
-  return readAs.call(this,this.readAsText,callback,pos,len,saveAsBuffer);
+ var readText = function(callback,pos,len) {
+  return readAs.call(this,this.readAsText,callback,pos,len);
  }
 
- var readAs = function(method,callback,pos,len,saveAsBuffer) {
+ var readAs = function(method,callback,pos,len) {
   if (this.readyState == 1) return("ReaderNotReady");
-  if (this.PreloadBufferSize && (pos >= this.PreloadBufferOffset) && ((pos + len) <= (this.PreloadBufferOffset+this.PreloadBufferSize))) {
+  pos = pos > 0 ? pos : 0;
+  len = len > 0 ? len : 0;
+  if (this.Report) {
+   if (this.LastReadStart) console.log("Reader ("+this.File.name+"): Current buffer is offsets "+this.LastReadStart+" to "+(this.LastReadEnd));
+   console.log("Reader ("+this.File.name+"): Requested offsets "+pos+" to "+(len ? (pos+len) : this.File.size));
+  }
+  if (this.LastReadStart && (pos >= this.LastReadStart) && ((pos + len) <= (this.LastReadEnd))) {
    this.Position = pos + len;
-   var bbpos = pos - this.PreloadBufferOffset;
+   var pseudopos = pos - this.LastReadStart;
    //Return a pseudo reader element contaning result, parent and position.  Can't call reader methods on it though (would require duplication)
-   WaitUntil(() => true,callback.bind({result: this.PreloadBuffer.slice(bbpos, bbpos + len), Parent: this.Parent, Position: this.Position}));
+   if (this.Report) console.log("Reader ("+this.File.name+"): Returning psuedo-offsets "+pseudopos+" to "+(pseudopos+len));
+   if (!this.Cache) this.Cache = this.result.slice(0); //speed up repeated access (Reader.result is slow to access)
+   waitUntil(() => true,callback.bind({result: this.Cache.slice(pseudopos, pseudopos + len), Parent: this.Parent, Position: this.Position}));
   }
   else {
-   if (this.PreloadBufferSize) {
-    if (this.Report) console.log(">>>>>Requested bytes "+pos+" to "+(pos+len)+" - Clear PreloadBuffer<<<<<");
-    delete this.PreloadBuffer;
-    delete this.PreloadBufferOffset;
-    delete this.PreloadBufferSize;
+   if (this.LastReadStart) {
+    delete this.LastReadStart;
+    delete this.LastReadEnd;
+    delete this.Cache;
    }
    var fS = getFileSlice.call(this,pos,len);
    if (fS) {
-    if (saveAsBuffer) {
-     if (this.Report) console.log(">>>>>Load bytes "+pos+" to "+this.Position+" into PreloadBuffer<<<<<");
-     this.PreloadBufferOffset = pos;
-     this.PreloadBufferSize = len;
-     this.onloadend = (function() {
-      this.PreloadBuffer = this.result.slice(0);  //slice is conveniently defined as a function for both String and ArrayBuffer
-      callback.call(this);
-     }).bind(this);
-    }
-    else {
-     this.onloadend = callback.bind(this);
-    }
+    if (this.Report) console.log("Reader ("+this.File.name+"): New read of offsets "+pos+" to "+this.Position);
+    this.LastReadStart = pos;
+    this.LastReadEnd = pos + len;
+    this.onloadend = callback.bind(this);
     method.call(this,fS);
    }
    else {
@@ -112,21 +113,58 @@ MSLIB.Common = function(){
   }
  }
 
- var Starting = function() {
+ var starting = function() {
   this.Ready = false;
   this.Progress = 0;
  }
 
- var Finished = function() {
+ var finished = function() {
   this.Ready = true;
   this.Progress = 100;
  }
 
+ var getMSLIBWorkerURI = function(onMessage,extraModules,extraModuleNameSpaces) {
+  return URL.createObjectURL(new Blob([
+   recursiveSOURCE([MSLIB]).concat(recursiveSOURCE(extraModules,extraModuleNameSpaces),
+    "self.addEventListener(\"message\","+onMessage.toString()+");"
+   ).join(";\n")
+  ]));
+ }
+
+ var recursiveSOURCE = function(oArr,pArr) {
+  if (!oArr) return [];
+  else return [].concat.apply([],oArr.map((o,i) => {
+   if (!o) return [];
+   var path = (pArr && pArr[i]) || "MSLIB";
+   var declaration = (path.indexOf(".") < 0 ? "var " : "")+path+"=";
+   if (o._SOURCE) return declaration+o._SOURCE.toString()+"()";
+   else return [].concat.apply([declaration+"{}"],Object.keys(o).map((k) => recursiveSOURCE([o[k]],[path+"."+k])));
+  }));
+ }
+
+ var MSLIBWorker = function(uri) {
+  var worker = new Worker(uri);
+  worker.addEventListener("message", function(e) {
+   if (e.data == "WaitUntilPing") {
+    e.stopImmediatePropagation();
+    worker.postMessage("WaitUntilEcho");
+   }
+   else if ((e.data[0] == "Ready") || (e.data[0] == "Progress")) {
+    e.stopImmediatePropagation();
+    worker[e.data[0]] = e.data[1]
+   }
+  });
+  return worker;
+ }
+
  return {
-  WaitUntil: WaitUntil,
+  waitUntil: waitUntil,
   Reader: Reader,
-  Starting: Starting,
-  Finished: Finished
+  starting: starting,
+  finished: finished,
+  getMSLIBWorkerURI : getMSLIBWorkerURI,
+  MSLIBWorker: MSLIBWorker,
+  _SOURCE: _SOURCE
  }
 
 }();

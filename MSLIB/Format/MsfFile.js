@@ -3,7 +3,7 @@ zip.useWebWorkers = false;
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-MSLIB.Format.MsfFile = function() {
+MSLIB.Format.MsfFile = function _SOURCE() {
 
  var MsfFile = function(f) {
   MSLIB.Format.SQLiteFile.call(this, f);
@@ -35,7 +35,7 @@ MSLIB.Format.MsfFile = function() {
  
  MsfFile.prototype.getSpectrum = function(specID) {
   this.LastError = this.queryDB("select Spectrum from Spectra where UniqueSpectrumID = \""+specID+"\";")
-  MSLIB.Common.WaitUntil(() => {this.Ready},(function() {
+  MSLIB.Common.waitUntil(() => {this.Ready},(function() {
    var compressedBlob = new Blob([this.Query.Result.Data[0][0]], {type: 'application/octet-binary'});
    zip.createReader(
     new zip.BlobReader(compressedBlob),
@@ -73,7 +73,9 @@ MSLIB.Format.MsfFile = function() {
    );
   }).bind(this));
  }
-  
+
+ MsfFile._SOURCE = _SOURCE;
+
  return MsfFile;
 
 }();

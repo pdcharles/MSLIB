@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
+if (typeof pako != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
 
  //try to optimise buffer size in bytes for various tasks
  //for indexoffset and header, want to grab entire header in one read most of the time, but not too much of the spectrum
@@ -37,7 +37,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
 
  MzFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) {
   if (!this.Ready) return("MzFileNotReady");
-  MSLIB.Common.Starting.call(this);
+  MSLIB.Common.starting.call(this);
   this.Scans = [];
   if (prefetchScanHeaders) this.Internal.PrefetchScanHeaders = true;
   return this.Reader.readText(
@@ -51,7 +51,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
    if (!this.Ready) return("MzFileNotReady");
    if (!this.Scans.length) return("MzFileNoScanOffsets");
    if (!this.Scans[scan]) return("MzFileScanUnknown");
-   MSLIB.Common.Starting.call(this);
+   MSLIB.Common.starting.call(this);
   }
   if (prefetchSpectrumData) this.Internal.PrefetchSpectrum = true;
   if (this.Scans[scan] && this.Scans[scan].Scan) {
@@ -60,7 +60,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
     this.fetchSpectrumData();
    }
    else {
-    MSLIB.Common.Finished.call(this)
+    MSLIB.Common.finished.call(this)
    }
   }
   else {
@@ -84,7 +84,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
   else if (!this.Ready) return("MzFileNotReady");
   if (!this.Scans.length) this.fetchScanOffsets(true);
   else {
-   MSLIB.Common.Starting.call(this);
+   MSLIB.Common.starting.call(this);
    this.Internal.FetchAll = true;
    this.fetchScanHeader(this.getFirstScanNumber());
   }
@@ -94,7 +94,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
   if (this.Internal.PrefetchSpectrum) delete this.Internal.PrefetchSpectrum;
   else {
    if (!this.Ready) return("MzFileNotReady");
-   MSLIB.Common.Starting.call(this);
+   MSLIB.Common.starting.call(this);
   }
   if (!this.Scans.length) return("MzFileNoScanOffsets");
   if (!this.CurrentScan) return("MzFileScanNotLoaded");
@@ -149,7 +149,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
     this.Parent.fetchAllScanHeaders();
    }
    else {
-    MSLIB.Common.Finished.call(this.Parent);
+    MSLIB.Common.finished.call(this.Parent);
    }
   }
   else {
@@ -191,7 +191,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
    this.Parent.fetchAllScanHeaders();
   }
   else {
-   MSLIB.Common.Finished.call(this.Parent);
+   MSLIB.Common.finished.call(this.Parent);
   }
  }
 
@@ -267,11 +267,11 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
      }
      else {
       delete this.Parent.Internal.FetchAll;
-      MSLIB.Common.Finished.call(this.Parent);
+      MSLIB.Common.finished.call(this.Parent);
      }
     }
     else {
-     MSLIB.Common.Finished.call(this.Parent);
+     MSLIB.Common.finished.call(this.Parent);
     }
    }
   }
@@ -317,7 +317,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
      }
      this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter((mz,i) => b[i]),b.filter((inten,i) => b[i]));
      delete this.Parent.Internal.firstBinaryArray;
-     MSLIB.Common.Finished.call(this.Parent);
+     MSLIB.Common.finished.call(this.Parent);
     }
    }
    else {
@@ -350,7 +350,7 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
      }
     }
     this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter((mz,i) => b[i]),b.filter((inten,i)  => b[i]));
-    MSLIB.Common.Finished.call(this.Parent);
+    MSLIB.Common.finished.call(this.Parent);
    }
    else {
     this.Parent.Internal.TextBuffer = text;
@@ -429,10 +429,10 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
   if (!t.length) {
    return [];
   }
-  var s = window.atob(t); //decode base64
+  var s = self.atob(t); //decode base64
   if (c && (c == "zlib")) {
    try {
-    s = zpipe.inflate(s); //deflate zlib
+    s = pako.inflate(s); //inflate zlib
    }
    catch (err) {
     console.log("Error: zpipe threw error (" + err + ") for compressed text:" + t);
@@ -466,6 +466,8 @@ if (typeof zpipe != 'undefined') MSLIB.Format.MzFile = function() {
   }
   return values;
  }
+
+ MzFile._SOURCE = _SOURCE;
 
  return MzFile;
 

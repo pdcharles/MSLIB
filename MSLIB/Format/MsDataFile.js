@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-MSLIB.Format.MsDataFile = function() {
+MSLIB.Format.MsDataFile = function _SOURCE() {
 
  var MsDataFile = function(f) {
   if (f) {
@@ -138,7 +138,7 @@ MSLIB.Format.MsDataFile = function() {
   }
   else {
    var lastScan  = this.getLastScanNumber();
-   do { s = this.MzFile.getNextScanNumber(s) } while ((this.Scans[s].Scan.MsLevel != mslevel) && (s < this.LastMS1Scan));
+   do { s = this.getNextScanNumber(s) } while ((this.Scans[s].Scan.MsLevel != mslevel) && (s < this.LastMS1Scan));
    if (this.Scans[s].Scan.MsLevel == mslevel) {
     return(s);
    }
@@ -156,24 +156,26 @@ MSLIB.Format.MsDataFile = function() {
  //Async PlaceHolders
 
  MsDataFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) {
-  return("MsDataFileNotImplemented");
   console.log("Not Implemented!");
+  return("MsDataFileNotImplemented");
  }
 
  MsDataFile.prototype.fetchScanHeader = function(scan,prefetchSpectrumData) {
-  return("MsDataFileNotImplemented");
   console.log("Not Implemented!");
+  return("MsDataFileNotImplemented");
  }
 
  MsDataFile.prototype.fetchAllScanHeaders = function() {
-  return("MsDataFileNotImplemented");
   console.log("Not Implemented!");
+  return("MsDataFileNotImplemented");
  }
 
  MsDataFile.prototype.fetchSpectrumData = function() {
-  return("MsDataFileNotImplemented");
   console.log("Not Implemented!");
+  return("MsDataFileNotImplemented");
  }
+
+ MsDataFile._SOURCE = _SOURCE;
 
  return MsDataFile;
 

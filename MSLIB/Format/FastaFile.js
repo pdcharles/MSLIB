@@ -2,10 +2,10 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-MSLIB.Format.FastaFile = function () {
+MSLIB.Format.FastaFile = function _SOURCE() {
 
  var FastaFile = function(f) {
-  this.Reader                 = new MSLIB.Common.Reader(f,this);
+  this.Reader            = new MSLIB.Common.Reader(f,this);
   this.Reader.onprogress = function(data) {
    if (data.lengthComputable) {                                            
     this.Progress = parseInt(((data.loaded/data.total)*100).toFixed(2));
@@ -27,7 +27,7 @@ MSLIB.Format.FastaFile = function () {
 
  FastaFile.prototype.load = function() {
   if (!(this.AccessionParse && this.DescriptionParse)) return ("FastaFileNoParseRules");
-  MSLIB.Common.Starting.call(this);
+  MSLIB.Common.starting.call(this);
   this.LastError = this.Reader.readText(
    function() {
     var text = this.result.replace(/\r\n?/gm,"\n");
@@ -49,11 +49,12 @@ MSLIB.Format.FastaFile = function () {
       this.Parent.Entries[entryacc]=[entrydesc,entrybody];
      }
     },this);
-    MSLIB.Common.Finished.call(this.Parent);
-   },
-   0
+    MSLIB.Common.finished.call(this.Parent);
+   }
   );
  };
+
+ FastaFile._SOURCE = _SOURCE;
 
  return FastaFile;
 

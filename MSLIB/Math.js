@@ -1,7 +1,7 @@
 "use strict";
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
-MSLIB.Math = function() {
+MSLIB.Math = function _SOURCE() {
  
  var log2 = function(x) {
   return(Math.log(x)/Math.log(2));
@@ -110,7 +110,7 @@ MSLIB.Math = function() {
   if (!arr.length) return null;
   if (arr.length <= (2*mar + 1)) return arr;
   mar = Math.round(mar);
-  var padding = Array.apply(null,Array(mar)).map(Number.prototype.valueOf,0);
+  var padding = Array(mar).fill(0);
   var smth = padding.concat(arr,padding).map(function(ele,i,paddedarr) {
    if ((i >= mar) && ((i+mar) < paddedarr.length)) {
     return paddedarr.slice(i-mar,i+mar+1).reduce((a,b) => (a+b))/(2*mar + 1);
@@ -165,6 +165,7 @@ MSLIB.Math = function() {
   ppmError      : ppmError,
   movingAverageSmooth : movingAverageSmooth,
   maxima        : maxima,
+  _SOURCE : _SOURCE
  }
 
 }();

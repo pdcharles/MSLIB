@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-MSLIB.Format.MgfFile = function () {
+MSLIB.Format.MgfFile = function _SOURCE() {
 
  var MgfFile = function(f) {
   MSLIB.Format.MsDataFile.call(this, f);
@@ -20,7 +20,7 @@ MSLIB.Format.MgfFile = function () {
  var mzIntPairParse = /^(\S+)\s+(\S+)$/;
 
  MgfFile.prototype.load = function() {
-  MSLIB.Common.Starting.call(this);
+  MSLIB.Common.starting.call(this);
   this.LastError = this.Reader.readText(
    function() {
     var text = this.result.replace(/\r\n?/gm,"\n");
@@ -95,9 +95,8 @@ MSLIB.Format.MgfFile = function () {
       console.log("Failed to parse TITLE and PEPMASS from entry "+i+":"+entry);
      }
     },this);
-    MSLIB.Common.Finished.call(this.Parent);
-   },
-   0
+    MSLIB.Common.finished.call(this.Parent);
+   }
   );
  };
 
@@ -122,6 +121,8 @@ MSLIB.Format.MgfFile = function () {
   });
   return out;
  }
+
+ MgfFile._SOURCE = _SOURCE;
 
  return MgfFile;
 

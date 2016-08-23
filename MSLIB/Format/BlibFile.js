@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-MSLIB.Format.BlibFile = function() {
+MSLIB.Format.BlibFile = function _SOURCE() {
 
  var BlibFile = function(f) {
   MSLIB.Format.SQLiteFile.call(this, f);
@@ -34,7 +34,7 @@ MSLIB.Format.BlibFile = function() {
  
  BlibFile.prototype.fetchSpectrum = function(specID) {
   this.LastError = this.queryDB("select peakMz,peakIntensity from RefSpectraPeaks where RefSpectraID=\""+specID+"\";")
-  MSLIB.Common.WaitUntil(function() {return this.Ready},(function() {
+  MSLIB.Common.waitUntil(function() {return this.Ready},(function() {
     var uncompressed_mz = zpipe.inflate(String.fromCharCode.apply(null,this.QueryResult.Data[0][0]));
     var bytes_mz = new Uint8Array(uncompressed_mz.length);
     for (var i = 0; i < uncompressed_mz.length; i++) { 
@@ -65,7 +65,9 @@ MSLIB.Format.BlibFile = function() {
    }).bind(this)
   );
  }
-  
+ 
+ BlibFile._SOURCE = _SOURCE;
+
  return BlibFile;
 
 }();

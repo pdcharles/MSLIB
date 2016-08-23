@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-MSLIB.Format.ThermoRawFile = function() {
+MSLIB.Format.ThermoRawFile = function _SOURCE() {
 
  const ANALYSER = ["ITMS","TQMS","SQMS","TOFMS","FTMS","Sector"];
 
@@ -28,7 +28,7 @@ MSLIB.Format.ThermoRawFile = function() {
  ThermoRawFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) { //Nested calls to get all file headers at once
   //prefetchScanHeaders not used (they have to be fetched either way)
   if (!this.Ready) return("ThermoRawFileNotReady");
-  MSLIB.Common.Starting.call(this);
+  MSLIB.Common.starting.call(this);
   this.LastError = this.Reader.readBinary(function() {
     (function() {
      this.LastError = fetchStruct.call(this,(function(s){
@@ -52,8 +52,7 @@ MSLIB.Format.ThermoRawFile = function() {
     }).call(this.Parent);
    },
    0,
-   1420,
-   true // First 1420 bytes are fixed and can be prebuffered
+   1420 // First 1420 bytes are fixed and can be prebuffered
   );
  };
 
@@ -90,7 +89,7 @@ MSLIB.Format.ThermoRawFile = function() {
  }
 
  var fetchScanHeaderList = function() {
-  this.LastError = this.Reader.readBinary(function() {
+  this.LastError = this.Reader.readBinary(function() { // Pre-buffer
     (function() {
      this.LastError = fetchStruct.call(this,(function(s){
       this.Internal.ScanHeaderList = s;
@@ -121,13 +120,12 @@ MSLIB.Format.ThermoRawFile = function() {
        }
        prevSN = s;
       },this);
-      MSLIB.Common.Finished.call(this);
+      MSLIB.Common.finished.call(this);
      }).bind(this),this.Internal.Offsets.ScanHeaderList,ScanHeaderList);
     }).call(this.Parent);
    },
    this.Internal.Offsets.ScanHeaderList,
-   this.Internal.MSRunHeader.ScanParamsAddr - this.Internal.Offsets.ScanHeaderList,
-   true // Pre-buffer ScanEvent and ScanHeader reads
+   this.Internal.MSRunHeader.ScanParamsAddr - this.Internal.Offsets.ScanHeaderList
   );
  }
 
@@ -154,9 +152,9 @@ MSLIB.Format.ThermoRawFile = function() {
    if (!this.Ready) return("MzFileNotReady");
    if (!this.Scans.length) return("ThermoRawFileNoScanOffsets");
    if (!this.CurrentScan) return("ThermoRawFileScanNotLoaded");
-   MSLIB.Common.Starting.call(this);
+   MSLIB.Common.starting.call(this);
   }
-  this.LastError = this.Reader.readBinary(function() {
+  this.LastError = this.Reader.readBinary(function() { // Pre-buffer
     (function() {
      this.LastError = fetchStruct.call(this,(function(s){
       this.Internal.ScanDataPacket = s;
@@ -181,13 +179,12 @@ MSLIB.Format.ThermoRawFile = function() {
        ints = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map((peak) => peak.Abundance);
       }
       this.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(mzs,ints);
-      MSLIB.Common.Finished.call(this);
+      MSLIB.Common.finished.call(this);
      }).bind(this),this.Scans[this.CurrentScan.ScanNumber].Offset,ScanDataPacket);
     }).call(this.Parent);
    },
    this.Scans[this.CurrentScan.ScanNumber].Offset,
-   this.Scans[this.CurrentScan.ScanNumber].Length,
-   true // Pre-buffer ScanEvent and ScanHeader reads
+   this.Scans[this.CurrentScan.ScanNumber].Length 
   );
  }
 
@@ -716,6 +713,8 @@ MSLIB.Format.ThermoRawFile = function() {
    return String.fromCharCode.apply(null,arr.slice(0,endindex));
   }
  }
+
+ ThermoRawFile._SOURCE = _SOURCE;
 
  return ThermoRawFile;
 
