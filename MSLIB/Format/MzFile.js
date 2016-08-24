@@ -2,7 +2,7 @@
 
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
-if (typeof pako != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
+if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
 
  //try to optimise buffer size in bytes for various tasks
  //for indexoffset and header, want to grab entire header in one read most of the time, but not too much of the spectrum
@@ -233,7 +233,7 @@ if (typeof pako != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
     }
    },this);
    if (this.Parent.FileType == "mzXML" && /<peaks\s/.exec(eles[i])) {
-    this.Parent.CurrentScan.Internal.BinaryDataID.push('mz-int');
+//    this.Parent.CurrentScan.Internal.BinaryDataID.push('mz-int');
     this.Parent.CurrentScan.Internal.BinaryDataOffset.push(this.Position - text.length + eles.slice(0,i+1).join("").length + i + 1);
     break;
    }
@@ -337,16 +337,16 @@ if (typeof pako != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
     var values = decodeByteArray(text,this.Parent.CurrentScan.Internal.CompressionType[0],this.Parent.CurrentScan.Internal.BinaryDataPrecision[0],(this.Parent.CurrentScan.Internal.BinaryDataEndianness!="network"))
     var a = [];
     var b = [];
-    if (this.Parent.CurrentScan.Internal.BinaryDataID[0] == "-int") {
+    if (this.Parent.CurrentScan.Internal.BinaryDataID[0] == "int-") {
      for (var i = 0; i < values.length; i = i+2) { 
-      a.push(values[i]);
-      b.push(values[i+1]);
+      b.push(values[i]);
+      a.push(values[i+1]);
      }
     }
     else {
      for (var i = 0; i < values.length; i = i+2) { 
-      b.push(values[i]); 
-      a.push(values[i+1]);
+      a.push(values[i]); 
+      b.push(values[i+1]);
      }
     }
     this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter((mz,i) => b[i]),b.filter((inten,i)  => b[i]));
@@ -412,10 +412,10 @@ if (typeof pako != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    PrecursorCharges : /<precursorMz\s(?:[^]+\s)?precursorCharge="(.+?)"/,
    PrecursorIntensities : /<precursorMz\s(?:[^]+\s)?precursorIntensity="(.+?)"/,
    ActivationMethods : /<precursorMz\s(?:[^]+\s)?activationMethod="(.+?)"/,
-   BinaryDataLength :  /<peaks\s(?:[^]+\s)?compressedLen="(\d+)"/,
+//   BinaryDataLength :  /<peaks\s(?:[^]+\s)?compressedLen="(\d+)"/,  //usually inaccurate (or is mis-documented)
    CompressionType : /<peaks\s(?:[^]+\s)?compressionType="(.+?)"/,
    BinaryDataPrecision : /<peaks\s(?:[^]+\s)?precision="(32|64)"/,  
-   BinaryDataID : /<peaks\s(?:[^]+\s)?contentType=".+?(-?int-?)"/,
+   BinaryDataID : /<peaks\s(?:[^]+\s)?(?:contentType|pairOrder)=".*(-int|int-).*"/,
    BinaryDataEndianness : /<peaks\s(?:[^]+\s)?byteOrder="(.+?)"/
   }
  }
@@ -430,19 +430,22 @@ if (typeof pako != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    return [];
   }
   var s = self.atob(t); //decode base64
+  var bytes;
   if (c && (c == "zlib")) {
    try {
-    s = pako.inflate(s); //inflate zlib
+    bytes = zlib.inflate(s); //inflate zlib
    }
    catch (err) {
     console.log("Error: zpipe threw error (" + err + ") for compressed text:" + t);
     return [];
-   }  
+   }
   }
-  var bytes = new Uint8Array(s.length);
-  for (var i = 0; i < s.length; i++) { 
-   bytes[i] = s.charCodeAt(i);
-  } 
+  else {
+   bytes = new Uint8Array(s.length);
+   for (var i = 0; i < s.length; i++) { 
+    bytes[i] = s.charCodeAt(i);
+   }
+  }
   var dV = new DataView(bytes.buffer);  //Have to use DataView to access in Big-Endian format
   var values = [];
   if (p == 32) {
