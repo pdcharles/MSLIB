@@ -1,10 +1,9 @@
-Inital git commit 22/01/2016 by Phil Charles (estofi.uk@gmail.com)
+By Phil Charles (estofi.uk@gmail.com)
+Inital git commit 22/01/2016
 
 MSLIB is a javascript library for reading several major file formats assosciated with proteomic Mass Spectrometry.
 
-The aim is to allow allows client-side analysis scripts to be build and distributed as a self-contained webpage,
-enabling rapid prototyping and distribution of bespoke analysis scripts while only requiring end-users to have an
-up-to-date web browser installed.
+The aim is to allow allows client-side analysis scripts to be build and distributed as a self-contained webpage, enabling rapid prototyping and distribution of bespoke analysis scripts while only requiring end-users to have an up-to-date web browser installed.
 
 File formats currently supported:
  => Generic comma and tab-separated text files
