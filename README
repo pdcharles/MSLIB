@@ -13,16 +13,16 @@ File formats currently supported:
  => .mzML and .mzXML MS data files (most vendor-specific raw data files can be converted to or exported as this format)
  => .raw Thermo Fisher Scientific(TM) Raw data files (experimental, a port of UnThermo - https://godoc.org/bitbucket.org/proteinspector/ms/unthermo)
  => .msf Thermo Fisher Scientific(TM) Magellan Storage Format files produced by Thermo Proteome Discoverer(TM)
- => .blib BiblioSpec Spectral Library files (https://skyline.gs.washington.edu/labkey/project/home/software/BiblioSpec/begin.view)
+ => .blib BiblioSpec Spectral Library files (see https://skyline.gs.washington.edu/labkey/project/home/software/BiblioSpec/begin.view)
 
-Support is also intended for:
+Support may also be added in the future for:
  => .ms1 and .ms2 MS data files (Yates Lab format http://fields.scripps.edu/)
 
-MSLIB has the following dependencies:
+MSLIB has the following dependencies which, slightly modified (as allowed by their respective licenses) to self-report their own source, are provided in the distrib/ folder. Not all dependencies are required, depending on what formats need to be read.
 
-zpipe (required for reading mzML/mzXML with zlib compression)
-https://github.com/richardassar/zpipe
- => zpipe.full.js
+pako (required for reading mzML/mzXML with zlib compression)
+https://github.com/nodeca/pako
+ => pako_inflate.1.0.3.min.js
 
 zip (required for reading zipped spectra in .msf) files)
 http://gildas-lormeau.github.io/zip.js
@@ -34,10 +34,7 @@ https://github.com/kripken/sql.js/
  => sql.js
 
 Once downloaded, the dependencies should be loaded in the header of your page e.g.
-<!-- https://github.com/richardassar/zpipe -->
-<script src="mslib/distrib/zlib/zpipe.full.js"></script>
-<!-- http://gildas-lormeau.github.io/zip.js -->
+<script src="mslib/distrib/zlib/pako_inflate.1.0.3.min.js"></script>
 <script src="mslib/distrib/zip/zip.js"></script>
 <script src="mslib/distrib/zip/inflate.js"></script>
-<!-- https://github.com/kripken/sql.js/ -->
 <script src="mslib/distrib/sqlite/sql.js"></script>
