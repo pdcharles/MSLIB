@@ -25,28 +25,23 @@ MSLIB.Format.MsDataFile = function _SOURCE() {
    var s = this.Scans.findIndex((ele) => (typeof(ele) != 'undefined'));
    return (s >= 0 ? s : null);
   }
-  else {
-   return(null);
-  }
+  else return(null);
  };
  
  MsDataFile.prototype.getLastScanNumber = function() {
-  if (this.Scans.length) {
-   return(this.Scans.length-1);
-  }
-  else {
-   return(null);
-  }
+  if (this.Scans.length) return(this.Scans.length-1);
+  else return(null);
  };
  
  MsDataFile.prototype.getPreviousScanNumber = function(s,mslevel) {
   if ((typeof(s) === 'undefined') && (typeof(this.CurrentScan.ScanNumber) != 'undefined')) s = this.CurrentScan.ScanNumber;
+  var FirstScan = this.getFirstScanNumber();
+  if (!FirstScan || (s <= FirstScan)) return null;
   if ((typeof(mslevel) === 'undefined') || isNaN(mslevel) || !Number.isInteger(mslevel) || (mslevel < 1)) {
    if (this.Scans.length && this.Scans[s]) return(this.Scans[s].Previous || null);
    else return(null);
   }
   else {
-   var FirstScan = this.getFirstScanNumber();
    do { s = this.getPreviousScanNumber(s) } while ((this.Scans[s].Scan.MsLevel != mslevel) && (s > FirstScan));
    if (this.Scans[s].Scan.MsLevel == mslevel) return(s);
    else return(null);
@@ -55,12 +50,13 @@ MSLIB.Format.MsDataFile = function _SOURCE() {
  
  MsDataFile.prototype.getNextScanNumber = function(s,mslevel) {
   if ((typeof(s) === 'undefined') && (typeof(this.CurrentScan.ScanNumber) != 'undefined')) s = this.CurrentScan.ScanNumber;
+  var LastScan = this.getLastScanNumber();
+  if (!LastScan || s >= LastScan) return(null);
   if ((typeof(mslevel) === 'undefined') || isNaN(mslevel) || !Number.isInteger(mslevel) || (mslevel < 1)) {
    if (this.Scans.length && this.Scans[s]) return(this.Scans[s].Next || null);
    else return(null);
   }
   else {
-   var LastScan = this.getLastScanNumber();
    do { s = this.getNextScanNumber(s); } while ((this.Scans[s].Scan.MsLevel != mslevel) && (s < LastScan));
    if (this.Scans[s].Scan.MsLevel == mslevel) return(s);
    else return(null);
