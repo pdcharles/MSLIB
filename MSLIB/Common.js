@@ -3,9 +3,6 @@
 if (typeof MSLIB == 'undefined') var MSLIB = {};
 MSLIB.Common = function _SOURCE(){
 
- //Implement a fast ready-wait as 4ms minimum window.setTimeout is too slow
- //http://dbaron.org/log/20100309-faster-timeouts
-
  var WaitStack = [];
  var waitUntil = function(tfunc,rfunc) {
   WaitStack.push([tfunc,rfunc])
@@ -36,24 +33,24 @@ MSLIB.Common = function _SOURCE(){
    r.File = f;
   }
   else {
-   console.log("Error: Invalid File object");
-   return {};
+   throw new Error("ReaderInvalidFileObject");
   }
   r.Parent = parent;
   r.Position = 0;
   r.Report = false;
-  r.onerror = function(e) { console.log("Error: In file " + e.target.File.name + " - " + e.target.error.message) };
   r.readBinary = readBinary;
   r.readText = readText;
   r.Progress = 0;
-  r.onprogress = function(e) { r.Progress = (e.loaded/e.total)*100 };
+  r.onprogress = function(e) { r.Progress = (e.lengthComputable ? (e.loaded/e.total)*100 : -1 ) };
+  r.onerror = (function(e) { console.log("Reader ("+this.File.name+"): Error - "+this.error.name)}).bind(r);
+  r.onabort = (function(e) { console.log("Reader ("+this.File.name+"): Aborted")}).bind(r);
   return r;
  };
 
  var getFileSlice = function(pos,len) {
   if (pos >= this.File.size) {
    console.log("Error: Last valid file offset ("+(this.File.size-1)+") is before offset " + pos);
-   return(null);
+   throw new Error("ReaderInvalidFileOffset");
   }
   else {
    var fS;
@@ -78,7 +75,8 @@ MSLIB.Common = function _SOURCE(){
  }
 
  var readAs = function(method,callback,pos,len) {
-  if (this.readyState == 1) return("ReaderNotReady");
+  self.readAs=[pos,len,this.readyState];
+  if (this.readyState == 1) throw new Error("ReaderNotReady");
   pos = pos > 0 ? pos : 0;
   len = len > 0 ? len : 0;
   if (this.Report) {
@@ -105,10 +103,11 @@ MSLIB.Common = function _SOURCE(){
     this.LastReadStart = pos;
     this.LastReadEnd = pos + len;
     this.onloadend = callback.bind(this);
+    if (this.Report) console.log("Reader ("+this.File.name+"): Calling "+method.name);
     method.call(this,fS);
    }
    else {
-    return("ReaderInvalidFileSlice");
+    throw new Error("ReaderInvalidFileSlice");
    }
   }
  }
@@ -123,22 +122,23 @@ MSLIB.Common = function _SOURCE(){
   this.Progress = 100;
  }
 
- var getMSLIBWorkerURI = function(onMessage,extraModules,extraModuleNameSpaces) {
+ var getMSLIBWorkerURI = function(OnMessage,SelectCoreModules,ExtraModules,ExtraModuleNameSpaces) {
   return URL.createObjectURL(new Blob([
-   recursiveSOURCE([MSLIB]).concat(recursiveSOURCE(extraModules,extraModuleNameSpaces),
-    "self.addEventListener(\"message\","+onMessage.toString()+");"
+   recursiveSOURCE([MSLIB],["MSLIB"],SelectCoreModules).concat(recursiveSOURCE(ExtraModules,ExtraModuleNameSpaces),
+    "self.addEventListener(\"message\","+OnMessage.toString()+");"
    ).join(";\n")
   ]));
  }
 
- var recursiveSOURCE = function(oArr,pArr) {
+ var recursiveSOURCE = function(oArr,pArr,cArr) {
   if (!oArr) return [];
   else return [].concat.apply([],oArr.map((o,i) => {
    if (!o) return [];
-   var path = (pArr && pArr[i]) || "MSLIB";
+   var path = (pArr && pArr[i]);
+   if (!path) return [];
    var declaration = (path.indexOf(".") < 0 ? "var " : "")+path+"=";
    if (o._SOURCE) return declaration+o._SOURCE.toString()+"()";
-   else return [].concat.apply([declaration+"{}"],Object.keys(o).map((k) => recursiveSOURCE([o[k]],[path+"."+k])));
+   else return [].concat.apply([declaration+"{}"],Object.keys(o).map((k) => (cArr && !cArr.find((e)=>(e==k))) ? [] : recursiveSOURCE([o[k]],[path+"."+k],cArr)));
   }));
  }
 
