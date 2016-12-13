@@ -143,11 +143,6 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    this.Parent.Scans[+regexmatch[1]] = {};
    this.Parent.Scans[+regexmatch[1]].Offset = (text_offset + RE.lastIndex - regexmatch[0].length);
    end_scannum_index = RE.lastIndex;
-   if ((+regexmatch[1] == 33416) || (+regexmatch[1] == 33417)) {
-    console.log(this.Position);
-    console.log(this.Parent.Internal.TextBuffer.length);
-    console.log(text_offset);   
-   }
    linkPrevious.call(this,+regexmatch[1]);
   }
   text = text.substr(end_scannum_index);
@@ -278,7 +273,6 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
       this.Parent.fetchScanHeader(this.Parent.getNextScanNumber(this.Parent.CurrentScan.ScanNumber))
      }
      else {
-      console.log("got here");
       delete this.Parent.Internal.FetchAll;
       MSLIB.Common.finished.call(this.Parent);
      }
