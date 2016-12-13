@@ -153,8 +153,8 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   comp_matchlist.sort((a,b) => a[0] - b[0]);
  
   return ([
-           new Spectrum(this_matchlist.map((a) => a[0]),this_matchlist.map((a) => a[1])),
-           new Spectrum(comp_matchlist.map((a) => a[0]),comp_matchlist.map((a) => a[1]))
+           [this_matchlist.map((a) => a[0]),this_matchlist.map((a) => a[1])],
+           [comp_matchlist.map((a) => a[0]),comp_matchlist.map((a) => a[1])]
           ]);
  };
 
@@ -166,9 +166,27 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   if (typeof(mzPPMError) == "undefined") {
    mzPPMError = 5.0;
   }
-  var matched_spectra = this.getMatchedSpectra(comparator,mzPPMError);
-  return MSLIB.Math.sqrtUnitNormalisedSpectralContrastAngle(matched_spectra[0].ints,matched_spectra[1].ints);
+  var matched_spectra = Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
+  return MSLIB.Math.sqrtUnitNormalisedSpectralContrastAngle(matched_spectra[0][1],matched_spectra[1][1]);
  };
+
+ Spectrum.prototype.getSimilarityScoreAgainst = function(comparator,mzPPMError) {
+  if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
+   console.log("can only getSimilarityScoreAgainst another Spectrum (or object with mzs and int)");
+   return Number.NaN;
+  }
+  if (typeof(mzPPMError) == "undefined") {
+   mzPPMError = 5.0;
+  }
+  var matched_spectra = Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
+  var sum_0 = matched_spectra[0][1].reduce((a,b)=>a+b,0);
+  var sum_1 = matched_spectra[1][1].reduce((a,b)=>a+b,0);
+  var proportions_0 = matched_spectra[0][1].map(e=>e/sum_0);
+  var proportions_1 = matched_spectra[1][1].map(e=>e/sum_1);
+  var squared_diffs_weighted = proportions_0.map((e,i)=>Math.pow(proportions_1[i]-e,2)*proportions_1[i]);
+  return 1-Math.sqrt(squared_diffs_weighted.reduce((a,b)=>a+b));
+ };
+
 
  Spectrum._SOURCE = _SOURCE;
 
