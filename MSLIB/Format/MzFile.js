@@ -24,8 +24,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    this.FileType = "mzXML";
   }
   else {
-   console.log("Error: unsupported file type");
-   return {};
+   throw new Error("MzFileInvalidFileType");
   }
   this.Internal.Offsets.Index = 0;
  };
@@ -36,7 +35,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
  //------------------------------------------------------------------------------
 
  MzFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) {
-  if (!this.Ready) return("MzFileNotReady");
+  if (!this.Ready) throw new Error("MzFileNotReady");
   MSLIB.Common.starting.call(this);
   this.Scans = [];
   if (prefetchScanHeaders) this.Internal.PrefetchScanHeaders = true;
@@ -48,9 +47,9 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
 
  MzFile.prototype.fetchScanHeader = function(scan,prefetchSpectrumData) {
   if (!this.Internal.FetchAll) {
-   if (!this.Ready) return("MzFileNotReady");
-   if (!this.Scans.length) return("MzFileNoScanOffsets");
-   if (!this.Scans[scan]) return("MzFileScanUnknown");
+   if (!this.Ready) throw new Error("MzFileNotReady");
+   if (!this.Scans.length) throw new Error("MzFileNoScanOffsets");
+   if (!this.Scans[scan]) throw new Error("MzFileScanUnknown");
    MSLIB.Common.starting.call(this);
   }
   if (prefetchSpectrumData) this.Internal.PrefetchSpectrum = true;
@@ -60,7 +59,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
     this.fetchSpectrumData();
    }
    else {
-    MSLIB.Common.finished.call(this)
+    MSLIB.Common.finished.call(this);
    }
   }
   else {
@@ -81,7 +80,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
 
  MzFile.prototype.fetchAllScanHeaders = function() {
   if (this.Internal.PrefetchScanHeaders) delete this.Internal.PrefetchScanHeaders;
-  else if (!this.Ready) return("MzFileNotReady");
+  else if (!this.Ready) throw new Error("MzFileNotReady");
   if (!this.Scans.length) this.fetchScanOffsets(true);
   else {
    MSLIB.Common.starting.call(this);
@@ -93,12 +92,12 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
  MzFile.prototype.fetchSpectrumData = function() {
   if (this.Internal.PrefetchSpectrum) delete this.Internal.PrefetchSpectrum;
   else {
-   if (!this.Ready) return("MzFileNotReady");
+   if (!this.Ready) throw new Error("MzFileNotReady");
    MSLIB.Common.starting.call(this);
   }
-  if (!this.Scans.length) return("MzFileNoScanOffsets");
-  if (!this.CurrentScan) return("MzFileScanNotLoaded");
-  this.CurrentScan.SpectrumData = {};
+  if (!this.Scans.length) throw new Error("MzFileNoScanOffsets");
+  if (!this.CurrentScan) throw new Error("MzFileScanNotLoaded");
+  this.CurrentScan.Spectrum = null;
   this.Internal.TextBuffer = "";
   this.Reader.readText(
    parseSpectrumData[this.FileType],
@@ -113,6 +112,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
 
  var parseScanOffsetStart = function() {
   var regexmatch = regex[this.Parent.FileType].Index.exec(this.result);
+  this.Parent.Internal.PreviousScanNumber = null;
   if (regexmatch) {
    this.Parent.Internal.Offsets.Index = +regexmatch[1];
    this.Parent.Reader.readText(
@@ -122,7 +122,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   }
   else {
    if (this.Parent.FileType == "mzXML") {
-    console.log("Warning: Index offset is undefined - will manually parse scan offsets");
+    console.log("Warning: Index offset is undefined - will parse scan offsets line-by-line");
     this.Parent.Internal.TextBuffer = "";
     this.Parent.Reader.readText(
      parseUnindexedScanOffsets,
@@ -130,18 +130,25 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
      UNINDEXED_OFFSET_SLICE_SIZE
     );
    }
-   else console.log("Can't find Index offset");
+   else throw new Error("MzFileCannotParseIndexOffset");
   }
  };
 
  var parseUnindexedScanOffsets = function() {
   var text = this.Parent.Internal.TextBuffer + this.result;
-  var text_offset = this.Position - UNINDEXED_OFFSET_SLICE_SIZE - this.Parent.Internal.TextBuffer.length;
+  var text_offset = this.Position - text.length;
   var RE = /<scan num="(\d+)"/g;
-  var end_scannum_index;
+  var regexmatch,end_scannum_index;
   while ((regexmatch = RE.exec(text)) !== null) {
-   this.Parent.Scans[regexmatch[1]] = (text_offset + RE.lastIndex - regexmatch[0].length);
+   this.Parent.Scans[+regexmatch[1]] = {};
+   this.Parent.Scans[+regexmatch[1]].Offset = (text_offset + RE.lastIndex - regexmatch[0].length);
    end_scannum_index = RE.lastIndex;
+   if ((+regexmatch[1] == 33416) || (+regexmatch[1] == 33417)) {
+    console.log(this.Position);
+    console.log(this.Parent.Internal.TextBuffer.length);
+    console.log(text_offset);   
+   }
+   linkPrevious.call(this,+regexmatch[1]);
   }
   text = text.substr(end_scannum_index);
   if (text.match(/<\/mzXML>/)) {
@@ -166,26 +173,19 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   var end_offset_index = this.result.lastIndexOf("</offset>") + 9;
   if (end_offset_index != 8) {
    var offsets = this.result.substr(0,end_offset_index).split("</offset>");
-   var previousScan = null;
    for (var i = 0; i < offsets.length-1; i++) {
     var regexmatch = regex[this.Parent.FileType].ScanOffset.exec(offsets[i]);
     if (regexmatch) {
      this.Parent.Scans[+regexmatch[1]] = {};
      this.Parent.Scans[+regexmatch[1]].Offset = +regexmatch[2];
-     if (previousScan) {
-      this.Parent.Scans[previousScan].Length = this.Parent.Scans[+regexmatch[1]].Offset - this.Parent.Scans[previousScan].Offset;
-      //add a spectrum binary length calc here?
-      this.Parent.Scans[previousScan].Next = +regexmatch[1];
-      this.Parent.Scans[+regexmatch[1]].Previous = previousScan;
-     }
-     previousScan = +regexmatch[1];
+     linkPrevious.call(this,+regexmatch[1]);
     }
    }
    //ensure last scan also has a length property
    this.Parent.Scans[this.Parent.Scans.length-1].Length = (this.Parent.Internal.Offsets.Index || this.Reader.File.size) - this.Parent.Scans[this.Parent.Scans.length-1].Offset;                  
   }
   else {
-   console.log("Can't find any indexList offset entries");
+   throw new Error("MzFileCannotParseIndexOffsetEntries");
   }
   if (this.Parent.Internal.PrefetchScanHeaders) {
    this.Parent.fetchAllScanHeaders();
@@ -195,6 +195,18 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   }
  }
 
+ var linkPrevious = function(s) {
+  if (this.Parent.Internal.PreviousScanNumber) {
+   if (this.Parent.Scans[s].Offset < this.Parent.Scans[this.Parent.Internal.PreviousScanNumber].Offset) {
+    throw new Error("MzFileInvalidUnindexedOffset");
+   }
+   this.Parent.Scans[this.Parent.Internal.PreviousScanNumber].Length = this.Parent.Scans[s].Offset - this.Parent.Scans[this.Parent.Internal.PreviousScanNumber].Offset;
+   this.Parent.Scans[this.Parent.Internal.PreviousScanNumber].Next = s;
+   this.Parent.Scans[s].Previous = this.Parent.Internal.PreviousScanNumber;
+  }
+  this.Parent.Internal.PreviousScanNumber = s;
+ }
+
  var parseScanHeader = function() {
   var text = this.Parent.Internal.TextBuffer + this.result;
   var end_ele_index = text.lastIndexOf(">") + 1;
@@ -202,7 +214,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   for (var i = 0; i < eles.length; i++) {
    if (this.Parent.FileType == "mzML" && /<binary$/.exec(eles[i])) {
     if (this.Parent.CurrentScan.Internal.BinaryDataListCount != 2) {
-     console.log("Error: Unexpected number of binary data arrays in mzML");
+     throw new Error("MzFileInvalidNumberOfBinaryDataArrays");
     }
     //current binary element offset is start position of the text + length of this and all previous eles + i + 1(correct for missing >)
     this.Parent.CurrentScan.Internal.BinaryDataOffset.push(this.Position - text.length + eles.slice(0,i+1).join("").length + i + 1)   
@@ -266,6 +278,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
       this.Parent.fetchScanHeader(this.Parent.getNextScanNumber(this.Parent.CurrentScan.ScanNumber))
      }
      else {
+      console.log("got here");
       delete this.Parent.Internal.FetchAll;
       MSLIB.Common.finished.call(this.Parent);
      }
@@ -313,7 +326,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
       a = second;
      }
      else {
-      console.log("Error: Unrecognised mz/int order of binary data in mzML");
+      throw new Error("MzFileUnrecognisedBinaryDataOrder");
      }
      this.Parent.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(a.filter((mz,i) => b[i]),b.filter((inten,i) => b[i]));
      delete this.Parent.Internal.firstBinaryArray;
@@ -437,6 +450,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    }
    catch (err) {
     console.log("Error: zpipe threw error (" + err + ") for compressed text:" + t);
+    throw new Error("MzFileZLibDecompressionFailure");
     return [];
    }
   }
@@ -451,6 +465,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   if (p == 32) {
    if (bytes.length % 4) {
     console.log("Error: Byte array length not a multiple of 4");
+    throw new Error("MzFileInvalidByteArrayLength");
    }
    for (var i = 0; i < dV.byteLength; i = i+4) { 
     values.push(dV.getFloat32(i,e)); 
@@ -459,6 +474,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   else if (p == 64) {
    if (bytes.length % 8) {
     console.log("Error: Byte array length not a multiple of 8");
+    throw new Error("MzFileInvalidByteArrayLength");
    }
    for (var i = 0; i < dV.byteLength-1; i = i+8) { 
     values.push(dV.getFloat64(i,e)); 
@@ -466,6 +482,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   }
   else {
    console.log("Error: Unknown precision value");
+   throw new Error("MzFileInvalidPrecision");
   }
   return values;
  }
@@ -476,4 +493,4 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
 
 }();
 
-else console.log("Warning: MzFile requires zpipe!");
+else throw new Error("MzFileNoZLib");
