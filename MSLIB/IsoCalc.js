@@ -279,7 +279,17 @@ MSLIB.IsoCalc = function _SOURCE() {
    
   // Add any peaks separated from all others by more than max_gap as maxima
   isotopes.forEach(function(iso,i) {
-   if (((i == 0) || (((iso[0] - isotopes[i-1][0])/iso[0]) > max_gap_ratio)) && ((i == (isotopes.length-1)) || (((isotopes[i+1][0] - iso[0])/iso[0]) > max_gap_ratio))) {
+   if (
+       (
+        (i == 0) || 
+        (((iso[0] - isotopes[i-1][0])/iso[0]) > max_gap_ratio) ||
+        (iso[1] > isotopes[i-1][1])
+       ) && (
+        (i == (isotopes.length-1)) || 
+        (((isotopes[i+1][0] - iso[0])/iso[0]) > max_gap_ratio) || 
+        (iso[1] > isotopes[i+1][1])
+       )
+      ) {
     is_max[i] = true;
    }
   });
@@ -324,25 +334,33 @@ MSLIB.IsoCalc = function _SOURCE() {
 //  console.log(groups);
 
   var centroided_groups = groups.map((g) => centroid(g));
+  var previous_length;
 
 //  console.log(centroided_groups);
  
   //Then, group maxima closer than ppm_gap
-  var grouped_cgs = [[centroided_groups[0]]];
-  
-  for (var i = 1; i < centroided_groups.length; i++) {
-   if ((centroided_groups[i][0] - centroided_groups[i-1][0])/centroided_groups[i][0] <= max_gap_ratio) {
-    grouped_cgs[grouped_cgs.length-1].push(centroided_groups[i]);
-   }
-   else {
-    grouped_cgs[grouped_cgs.length] = [centroided_groups[i]];
-   }
-  }
 
-  var final_centroids = grouped_cgs.map((i) => centroid(i));
+  do {
+
+   var grouped_cgs = [[centroided_groups[0]]];
+  
+   for (var i = 1; i < centroided_groups.length; i++) {
+    if ((centroided_groups[i][0] - centroided_groups[i-1][0])/centroided_groups[i][0] <= max_gap_ratio) {
+     grouped_cgs[grouped_cgs.length-1].push(centroided_groups[i]);
+    }
+    else {
+     grouped_cgs[grouped_cgs.length] = [centroided_groups[i]];
+    }
+   }
+   
+   previous_length = centroided_groups.length;
+
+   centroided_groups = grouped_cgs.map((g) => centroid(g));
+
+  } while (centroided_groups.length < previous_length);
 
   //Finally, remove any peaks representing less than 1% total intensity
-  final_centroids = final_centroids.filter((i) => (i[1] > 0.01));
+  var final_centroids = centroided_groups.filter((i) => (i[1] > 0.01));
 
   return(new Hyperatom({isotopes:final_centroids}));
  }
