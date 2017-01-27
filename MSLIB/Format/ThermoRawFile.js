@@ -12,14 +12,13 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
    this.FileType = "thermo_raw";
   }
   else {
-   console.log("Error: unsupported file type");
-   return {};
+   throw new Error("ThermoRawFileInvalidFileType");
   }
   this.FetchProfileSpectraWhenAvailable = 1;
  };
  ThermoRawFile.prototype = Object.create(MSLIB.Format.MsDataFile.prototype);
 
- var Reporting = false;
+ var Verbosity = false;
 
  //------------------------------------------------------------------------------
  //ThermoRawFile ASync methods
@@ -27,7 +26,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
 
  ThermoRawFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) { //Nested calls to get all file headers at once
   //prefetchScanHeaders not used (they have to be fetched either way)
-  if (!this.Ready) return("ThermoRawFileNotReady");
+  if (!this.Ready) throw new Error("ThermoRawFileNotReady");
   MSLIB.Common.starting.call(this);
   this.LastError = this.Reader.readBinary(function() {
     (function() {
@@ -130,10 +129,10 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }
 
  ThermoRawFile.prototype.fetchScanHeader = function(scan,prefetchSpectrumData) {
-  if (!this.Ready) return("ThermoRawFileNotReady");
-  if (!this.Scans.length) return("ThermoRawFileNoScanOffsets");
-  if (!this.Scans[scan]) return("ThermoRawFileScanUnknown");
-  this.CurrentScan = this.Scans[scan].Scan;
+  if (!this.Ready) throw new Error("ThermoRawFileNotReady");
+  if (!this.Scans.length) throw new Error("ThermoRawFileNoScanOffsets");
+  if (!this.Scans[scan]) throw new Error("ThermoRawFileScanUnknown");
+  this.CurrentScan = this.Scans[scan].Scan.clone();
   if (prefetchSpectrumData) {
    this.Internal.PrefetchSpectrum = true;
    this.fetchSpectrumData();
@@ -141,7 +140,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }
 
  ThermoRawFile.prototype.fetchAllScanHeaders = function() {
-  if (!this.Ready) return("ThermoRawFileNotReady");
+  if (!this.Ready) throw new Error("ThermoRawFileNotReady");
   if (!this.Scans.length) this.fetchScanOffsets();
   //Already done during fetchScanOffsets
  }
@@ -149,9 +148,9 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  ThermoRawFile.prototype.fetchSpectrumData = function() {
   if (this.Internal.PrefetchSpectrum) delete this.Internal.PrefetchSpectrum;
   else {
-   if (!this.Ready) return("MzFileNotReady");
-   if (!this.Scans.length) return("ThermoRawFileNoScanOffsets");
-   if (!this.CurrentScan) return("ThermoRawFileScanNotLoaded");
+   if (!this.Ready) throw new Error("ThermoRawFileNotReady");
+   if (!this.Scans.length) throw new Error("ThermoRawFileNoScanOffsets");
+   if (!this.CurrentScan) throw new Error("ThermoRawFileScanNotLoaded");
    MSLIB.Common.starting.call(this);
   }
   this.LastError = this.Reader.readBinary(function() { // Pre-buffer
@@ -222,7 +221,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
 
  //pseudo-structs
  var Header = function() {
-  var _Header = function() { Reporting = this.Report; if (Reporting) console.log("__Header__"); var hdr = [
+  var _Header = function() { if (this.Report) console.log("__Header__"); var hdr = [
    ["Magic",          uint16,   1], //   2 bytes - Start of fixed size file start block at byte offset 0
    ["$Signature",     uint16,   9], //  18 bytes
    ["u1",              uint8,   4], //   4 bytes
@@ -248,7 +247,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }();
 
  var SequencerRow = function() {
-  var _SequencerRow = function() { Reporting = this.Report; if (Reporting) console.log("__SequencerRow__"); var sr = [
+  var _SequencerRow = function() { if(this.Report) console.log("__SequencerRow__"); var sr = [
    ["Inj_u1",         uint32,   1], //   4 bytes
    ["Inj_RowNumber",  uint32,   1], //   4 bytes
    ["Inj_u2",         uint32,   1], //   4 bytes
@@ -286,7 +285,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }();
 
  var AutoSamplerInfo = function() {
-  var _AutoSamplerInfo = function() { Reporting = this.Report; if (Reporting) console.log("__AutoSamplerInfo__"); var asi = [
+  var _AutoSamplerInfo = function() { if (this.Report) console.log("__AutoSamplerInfo__"); var asi = [
    ["u1",              uint32,  1],
    ["u2",              uint32,  1],
    ["NumberOfWells",   uint32,  1],
@@ -300,7 +299,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }();
 
  var RawFileInfo = function() {
-  var _RawFileInfo = function() { Reporting = this.Report; if (Reporting) console.log("__RawFileInfo__"); var rf = [
+  var _RawFileInfo = function() { if (this.Report) console.log("__RawFileInfo__"); var rf = [
   	["MethFilePres",   uint32,   1],
   	["Year",           uint16,   1],
   	["Month",          uint16,   1],
@@ -351,7 +350,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }();
 
  var RunHeader = function() {
-  var _RunHeader = function () { Reporting = this.Report; if (Reporting) console.log("__RunHeader["+(this.Internal.RunHeaders.length)+"]__"); var rh = [
+  var _RunHeader = function () { if (this.Report) console.log("__RunHeader["+(this.Internal.RunHeaders.length)+"]__"); var rh = [
   	["SI_u1",           uint32,   1],
   	["SI_u2",           uint32,   1],
   	["FirstScanNumber", uint32,   1],
@@ -444,7 +443,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }();
 
  var ScanHeaderList = function() {
-  var _ScanHeaderList = function () { Reporting = this.Report; if (Reporting) console.log("__ScanHeaderList__(silent)"); Reporting = false; var shl = [
+  var _ScanHeaderList = function () { if (this.Report) console.log("__ScanHeaderList__(silent)"); var shl = [
    ["ScanHeaders",ScanHeader,   function() {return this.Internal.NScans}],
   	["?NScans",        uint32,   1],
   	["ScanEvents",  ScanEvent,   function() {return this.Internal.NScans}]];
@@ -453,7 +452,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
   var ScanHeader = function() {
    var sh = [];
    if (this.Internal.Construction.PartialStruct[0].ScanHeaders && this.Internal.Construction.PartialStruct[0].ScanHeaders.length) {
-    this.Progress = (this.Internal.Construction.PartialStruct[0].ScanHeaders.length/this.Internal.NScans)*50;
+    MSLIB.Common.progress.call(this,(this.Internal.Construction.PartialStruct[0].ScanHeaders.length/this.Internal.NScans)*50);
     if (this.Report && !(this.Internal.Construction.PartialStruct[0].ScanHeaders.length % 2000)) console.log("Reading ScanHeaderList: "+this.Progress.toFixed(0)+"%");
    }
    if (this.Internal.Header.Version < 64) { sh = sh.concat([ 
@@ -488,7 +487,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
   	//Preamble[6] == ms-level
   	//Preamble[40] == analyzer
    if (this.Internal.Construction.PartialStruct[0].ScanEvents && this.Internal.Construction.PartialStruct[0].ScanEvents.length) {
-    this.Progress = (this.Internal.Construction.PartialStruct[0].ScanEvents.length/this.Internal.NScans)*50 + 50;
+    MSLIB.Common.progress.call(this,(this.Internal.Construction.PartialStruct[0].ScanEvents.length/this.Internal.NScans)*50 + 50);
     if (this.Report && !(this.Internal.Construction.PartialStruct[0].ScanEvents.length % 2000)) console.log("Reading ScanHeaderList: "+this.Progress.toFixed(0)+"%");
    }
    if (this.Internal.Header.Version < 66) { sev = [  //Fix this?
@@ -545,7 +544,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  }();
 
  var ScanDataPacket = function() {
-  var _ScanDataPacket = function() { Reporting = this.Report; if (Reporting) console.log("__ScanDataPacket__"); return [
+  var _ScanDataPacket = function() { if (this.Report) console.log("__ScanDataPacket__"); return [
   	["u1",             uint32,   1],
   	["ProfileSize",    uint32,   1],
   	["PeakListSize",   uint32,   1],
@@ -596,9 +595,8 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
  //use: fetchStruct.call(ThermoRawFile,callback,pos,structfn)
 
  var fetchStruct = function(callback,pos,structfn) {
-  if (!structfn) return("ThermoRawFileUnknownStruct");
-  this.Ready = 0;
-  this.Progress = 0;
+  if (!structfn) throw new Error("ThermoRawFileUnknownStruct");
+  MSLIB.Common.starting.call(this);
   if (pos != null) this.Reader.Position = pos;
   this.Internal.Construction = {};
   this.Internal.Construction.Callback = callback;
@@ -615,7 +613,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
      var curr = this.Internal.Construction.Queue[0].shift();
      var substruct = curr[1].call(this);
      var repeat = (typeof(curr[2]) === "function" ? curr[2].call(this,this.Internal.Construction.PartialStruct[0]) : curr[2]);
-     if (repeat == 0) processConstruction.bind(this)();
+     if (repeat == 0) processConstruction.call(this);
      else {
       this.Internal.Construction.CurrentStructDef.unshift(curr);
       if (substruct.CType) {
@@ -624,7 +622,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
         console.log(this.Internal.Construction.PartialStruct);
        }
        else {
-        if (Reporting) console.log(this.Internal.Construction.CurrentStructDef.map((e) => e[0]).reverse().join(":") + " - " + substruct.ByteLength * repeat + " bytes at offset " + this.Reader.Position);
+        if (this.Report && Verbosity) console.log(this.Internal.Construction.CurrentStructDef.map((e) => e[0]).reverse().join(":") + " - " + substruct.ByteLength * repeat + " bytes at offset " + this.Reader.Position);
         this.LastError = this.Reader.readBinary(
          parseStructBinary,
          this.Reader.Position,
@@ -701,7 +699,7 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
   else {
    this.Parent.Internal.Construction.PartialStruct[0][sdef[0]] = finalval;
   }
-  processConstruction.bind(this.Parent)();
+  processConstruction.call(this.Parent);
  }
 
  var DecodeUTF16 = function(arr) {
