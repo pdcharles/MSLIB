@@ -12,12 +12,10 @@ if (typeof SQL) MSLIB.Format.SQLiteFile = function _SOURCE() {
   this.Reader      = new MSLIB.Common.Reader(f,this);
   this.Reader.onprogress = function(data) {
    if (data.lengthComputable) {                                            
-    this.Progress = ((data.loaded/data.total)*100).toFixed(2));
+    MSLIB.Common.progress.call(this,((data.loaded/data.total)*100).toFixed(2));
    }
   }
-  this.Ready       = true;
-  this.Progress    = 100;
-  this.Report      = false;
+  MSLIB.Common.initialise.call(this):
   this.FileType    = "generic_sqlite";
   this.Database    = {};
   this.Query       = {SQL: "", Result: {}};
@@ -38,7 +36,7 @@ if (typeof SQL) MSLIB.Format.SQLiteFile = function _SOURCE() {
   if (!this.Database) return("SQLiteFileDatabaseNotOpen");
   MSLIB.Common.starting.call(this);
   this.Query.SQL = q.replace(/\n/g, '; ');
-  MSLIB.Common.waitUntil(function() {return true}, (function() {
+  MSLIB.Common.callAsync(function() {
     this.Query.Result = {};
     try {
      var jsondata = this.Database.exec(this.Query.SQL);

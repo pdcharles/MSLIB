@@ -6,9 +6,7 @@ MSLIB.Format.TextTableFile = function _SOURCE() {
  
  var TextTableFile = function(f) {
   this.Reader                 = new MSLIB.Common.Reader(f,this);
-  this.Ready                  = true;
-  this.Progress               = 100;
-  this.Report                 = false;
+  MSLIB.Common.initialise.call(this);
   this.FileType               = "text_table";
   if (f.name.match(/\.csv$/i)) {
    this.Delimiter = ",";
@@ -31,7 +29,7 @@ MSLIB.Format.TextTableFile = function _SOURCE() {
     var lines = this.result.replace(/\r\n?/gm,"\n").split("\n");
     while (!lines[lines.length-1].length) lines.pop(); // remove trailing blank lines
     lines.forEach(function(line,i) {
-     this.Parent.Progress = ((i/lines.length)*100).toFixed(2);
+     MSLIB.Common.progress.call(this.Parent,((i/lines.length)*100).toFixed(2));
      if (this.Parent.Delimiter) {
       var splitarr = line.split(this.Parent.Delimiter);
       var fields = [];

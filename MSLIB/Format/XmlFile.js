@@ -6,9 +6,7 @@ MSLIB.Format.XmlFile = function _SOURCE() {
  
  var XmlFile = function(f) {
   this.Reader                 = new MSLIB.Common.Reader(f,this);
-  this.Ready                  = true;
-  this.Progress               = 100;
-  this.Report                 = false;
+  MSLIB.Common.initialise.call(this);
   this.FileType               = "xml";
   this.DocRoot                = null;
  };

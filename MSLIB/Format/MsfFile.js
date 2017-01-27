@@ -35,7 +35,7 @@ MSLIB.Format.MsfFile = function _SOURCE() {
  
  MsfFile.prototype.getSpectrum = function(specID) {
   this.LastError = this.queryDB("select Spectrum from Spectra where UniqueSpectrumID = \""+specID+"\";")
-  MSLIB.Common.waitUntil(() => {this.Ready},(function() {
+  MSLIB.Common.whenReady(this,(function() {
    var compressedBlob = new Blob([this.Query.Result.Data[0][0]], {type: 'application/octet-binary'});
    zip.createReader(
     new zip.BlobReader(compressedBlob),

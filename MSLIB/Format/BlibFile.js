@@ -34,7 +34,7 @@ MSLIB.Format.BlibFile = function _SOURCE() {
  
  BlibFile.prototype.fetchSpectrum = function(specID) {
   this.LastError = this.queryDB("select peakMz,peakIntensity from RefSpectraPeaks where RefSpectraID=\""+specID+"\";")
-  MSLIB.Common.waitUntil(function() {return this.Ready},(function() {
+  MMSLIB.Common.whenReady(this,(function() {
     var uncompressed_mz = zpipe.inflate(String.fromCharCode.apply(null,this.QueryResult.Data[0][0]));
     var bytes_mz = new Uint8Array(uncompressed_mz.length);
     for (var i = 0; i < uncompressed_mz.length; i++) { 

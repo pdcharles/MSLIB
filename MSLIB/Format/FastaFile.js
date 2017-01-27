@@ -6,14 +6,7 @@ MSLIB.Format.FastaFile = function _SOURCE() {
 
  var FastaFile = function(f) {
   this.Reader            = new MSLIB.Common.Reader(f,this);
-  this.Reader.onprogress = function(data) {
-   if (data.lengthComputable) {                                            
-    this.Progress = parseInt(((data.loaded/data.total)*100).toFixed(2));
-   }
-  }
-  this.Ready                  = true;
-  this.Progress               = 100;
-  this.Report                 = false;
+  MSLIB.Common.initialise.call(this):
   this.FileType               = "fasta";
   this.AccessionParse         = new RegExp(/>(\S+)/);
   this.DescriptionParse       = new RegExp(/\s(.+)$/);
@@ -34,7 +27,7 @@ MSLIB.Format.FastaFile = function _SOURCE() {
     text = text.replace(/^>/gm,"__START__");
     var entries = text.split("__START__");
     entries.forEach(function(entry,i) {
-     this.Parent.Progress = ((i/entries.length)*100).toFixed(2);
+     MSLIB.Common.progress.call(this.Parent,((i/entries.length)*100).toFixed(2));
      if (entry.length) {
       var firstNewLine = entry.indexOf("\n");
       var entryheader = ">"+entry.substr(0,firstNewLine);

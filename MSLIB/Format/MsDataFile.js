@@ -11,9 +11,7 @@ MSLIB.Format.MsDataFile = function _SOURCE() {
   else {
    this.Reader     = null;
   }
-  this.Ready       = true;
-  this.Progress    = 100;
-  this.Report      = false;
+  MSLIB.Common.initialise.call(this);
   this.FileType    = null;
   this.Scans       = [];
   this.Internal    = {Offsets: {}, Minutes: []};

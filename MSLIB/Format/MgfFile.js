@@ -8,7 +8,7 @@ MSLIB.Format.MgfFile = function _SOURCE() {
   MSLIB.Format.MsDataFile.call(this, f);
   this.Reader.onprogress      = function(data) {
    if (data.lengthComputable) {                                            
-    this.Progress = parseInt(((data.loaded/data.total)*100).toFixed(2));
+    MSLIB.Common.progress.call(this,parseInt(((data.loaded/data.total)*100).toFixed(2)));
    }
   }
   this.FileType               = "mgf";
