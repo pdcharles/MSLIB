@@ -22,6 +22,14 @@ MSLIB.Data.Scan = function _SOURCE() {
   this.Spectrum             = null;
  };
 
+ Scan.prototype.clone = function() {
+  var copy = new Scan();
+  Object.keys(this).forEach((k) => {
+   if (k != "Spectrum") copy[k] = JSON.parse(JSON.stringify(this[k]));
+  });
+  return(copy);
+ };
+
  Scan._SOURCE = _SOURCE;
 
  return Scan;
