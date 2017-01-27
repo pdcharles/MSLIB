@@ -14,6 +14,17 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
  const HEADER_SLICE_SIZE = 3000;
  const MZML_SPECTRUM_SLICE_SIZE = 12000;
  const MZXML_SPECTRUM_SLICE_SIZE = 24000;
+
+ const CID = "CID";
+ const HCD = "HCD";
+ const ETD = "ETD";
+ const PQD = "PQD";
+ const ZLIB = "zlib";
+ const NO_COMPRESSION = "none";
+ const MZ_INT = true;
+ const INT_MZ = false;
+ const MZ = true;
+ const INT = false;
  
  var MzFile = function(f) {
   MSLIB.Format.MsDataFile.call(this, f);
@@ -54,7 +65,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   }
   if (prefetchSpectrumData) this.Internal.PrefetchSpectrum = true;
   if (this.Scans[scan] && this.Scans[scan].Scan) {
-   this.CurrentScan = this.Scans[scan].Scan;
+   this.CurrentScan = this.Scans[scan].Scan.clone();
    if (prefetchSpectrumData) {
     this.fetchSpectrumData();
    }
@@ -68,7 +79,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    this.CurrentScan.Internal.BinaryDataPrecision  = [];
    this.CurrentScan.Internal.BinaryDataLength     = [];
    this.CurrentScan.Internal.BinaryDataOffset     = [];
-   this.CurrentScan.Internal.BinaryDataID         = [];
+   this.CurrentScan.Internal.BinaryDataIsMz       = [];
    this.Internal.TextBuffer = "";
    this.Reader.readText(
     parseScanHeader,
@@ -147,12 +158,10 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   }
   text = text.substr(end_scannum_index);
   if (text.match(/<\/mzXML>/)) {
-   if (this.Parent.Internal.PrefetchScanHeaders) {
-    this.Parent.fetchAllScanHeaders();
-   }
-   else {
-    MSLIB.Common.finished.call(this.Parent);
-   }
+   //ensure last scan also has a length property
+   this.Parent.Scans[this.Parent.Scans.length-1].Length = this.Parent.Reader.File.size - this.Parent.Scans[this.Parent.Scans.length-1].Offset; 
+   if (this.Parent.Internal.PrefetchScanHeaders) this.Parent.fetchAllScanHeaders();
+   else MSLIB.Common.finished.call(this.Parent);
   }
   else {
    this.Parent.Internal.TextBuffer = text;
@@ -177,17 +186,13 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
     }
    }
    //ensure last scan also has a length property
-   this.Parent.Scans[this.Parent.Scans.length-1].Length = (this.Parent.Internal.Offsets.Index || this.Reader.File.size) - this.Parent.Scans[this.Parent.Scans.length-1].Offset;                  
+   this.Parent.Scans[this.Parent.Scans.length-1].Length = this.Parent.Internal.Offsets.Index - this.Parent.Scans[this.Parent.Scans.length-1].Offset;                  
   }
   else {
    throw new Error("MzFileCannotParseIndexOffsetEntries");
   }
-  if (this.Parent.Internal.PrefetchScanHeaders) {
-   this.Parent.fetchAllScanHeaders();
-  }
-  else {
-   MSLIB.Common.finished.call(this.Parent);
-  }
+  if (this.Parent.Internal.PrefetchScanHeaders) this.Parent.fetchAllScanHeaders();
+  else MSLIB.Common.finished.call(this.Parent);
  }
 
  var linkPrevious = function(s) {
@@ -240,36 +245,60 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
     }
    },this);
    if (this.Parent.FileType == "mzXML" && /<peaks\s/.exec(eles[i])) {
-//    this.Parent.CurrentScan.Internal.BinaryDataID.push('mz-int');
     this.Parent.CurrentScan.Internal.BinaryDataOffset.push(this.Position - text.length + eles.slice(0,i+1).join("").length + i + 1);
     break;
    }
   }
-  if (this.Parent.CurrentScan.Internal.BinaryDataOffset[(this.Parent.FileType == "mzML" ? 1 : 0)]) {
+  if (this.Parent.CurrentScan.Internal.BinaryDataOffset[(this.Parent.FileType == "mzML" ? 1 : 0)]) { //End of header
    //Standardise values
    if (this.Parent.FileType == "mzXML" || this.Parent.CurrentScan.Internal.RTUnits=="second") {
     this.Parent.CurrentScan.RetentionTime /= 60;
    }
    if (this.Parent.FileType == "mzML") {
-    this.Parent.CurrentScan.ActivationMethods = this.Parent.CurrentScan.ActivationMethods.map(function(m) {
-     switch(m) {
-      case 1000133 : return "CID";
-      case 1000422 : return "HCD";
-      case 1000598 : return "ETD";
-      case 1000599 : return "PQD";
-      default : return m;
-     }
-    });
     if (this.Parent.CurrentScan.Centroided == null) this.Parent.CurrentScan.Centroided = 0;
+   }
+   this.Parent.CurrentScan.ActivationMethods = this.Parent.CurrentScan.ActivationMethods.map(function(value) {
+    switch(value) {
+     case 1000133 : 
+     case "CID"   : return CID;
+     case 1000422 : 
+     case "HCD"   : return HCD;
+     case 1000598 : 
+     case "ETD"   : return ETD;
+     case 1000599 : 
+     case "PQD"   : return PQD;
+     default : return value;
+    }
+   });
+   this.Parent.CurrentScan.Internal.CompressionType = this.Parent.CurrentScan.Internal.CompressionType.map(function(value) {
+    switch(value) {
+     case "zlib" : return ZLIB;
+     default : return NO_COMPRESSION;
+    }
+   });
+   this.Parent.CurrentScan.Internal.BinaryDataIsMz = this.Parent.CurrentScan.Internal.BinaryDataIsMz.map(function(value) {
+    switch(value) {
+     case "-int" : return MZ_INT;
+     case "int-" : return INT_MZ;
+     case 1000514 : return MZ;
+     case 1000515 : return INT;
+     default : return value;
+    }
+   });
+   if (this.Parent.CurrentScan.Internal.BinaryDataEndianness) {
+    if (this.Parent.CurrentScan.Internal.BinaryDataEndianness == "network") {
+     delete(this.Parent.CurrentScan.Internal.BinaryDataEndianness);
+    }
+    else throw new Error("MzFileUnrecognisedByteOrder");
    }
    if (this.Parent.Internal.PrefetchSpectrum) {
     this.Parent.fetchSpectrumData();
    }
    else {
     if (this.Parent.Internal.FetchAll) {
-     this.Parent.Scans[this.Parent.CurrentScan.ScanNumber].Scan = this.Parent.CurrentScan;
+     this.Parent.Scans[this.Parent.CurrentScan.ScanNumber].Scan = this.Parent.CurrentScan.clone();
      if (this.Parent.getNextScanNumber(this.Parent.CurrentScan.ScanNumber)) {
-      this.Parent.Progress = (this.Parent.CurrentScan.ScanNumber/this.Parent.getLastScanNumber())*100;
+      MSLIB.Common.progress.call(this.Parent,(this.Parent.CurrentScan.ScanNumber/this.Parent.getLastScanNumber())*100);
       this.Parent.fetchScanHeader(this.Parent.getNextScanNumber(this.Parent.CurrentScan.ScanNumber))
      }
      else {
@@ -311,11 +340,11 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
      var second = decodeByteArray(text,this.Parent.CurrentScan.Internal.CompressionType[1],this.Parent.CurrentScan.Internal.BinaryDataPrecision[1],true);
      var a = [];
      var b = [];
-     if (this.Parent.CurrentScan.Internal.BinaryDataID[0] == 1000514 && this.Parent.CurrentScan.Internal.BinaryDataID[1] == 1000515) {
+     if (this.Parent.CurrentScan.Internal.BinaryDataIsMz[0] && !this.Parent.CurrentScan.Internal.BinaryDataIsMz[1]) {
       a = first;
       b = second;
      }
-     else if (this.Parent.CurrentScan.Internal.BinaryDataID[0] == 1000515 && this.Parent.CurrentScan.Internal.BinaryDataID[1] == 1000514) {
+     else if (!this.Parent.CurrentScan.Internal.BinaryDataIsMz[0] && this.Parent.CurrentScan.Internal.BinaryDataIsMz[1]) {
       b = first;
       a = second;
      }
@@ -341,10 +370,10 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    var end_peaks_index = text.indexOf("</peaks>")
    if (end_peaks_index >= 0) {
     text = text.substr(0,end_peaks_index);
-    var values = decodeByteArray(text,this.Parent.CurrentScan.Internal.CompressionType[0],this.Parent.CurrentScan.Internal.BinaryDataPrecision[0],(this.Parent.CurrentScan.Internal.BinaryDataEndianness!="network"))
+    var values = decodeByteArray(text,this.Parent.CurrentScan.Internal.CompressionType[0],this.Parent.CurrentScan.Internal.BinaryDataPrecision[0],false)
     var a = [];
     var b = [];
-    if (this.Parent.CurrentScan.Internal.BinaryDataID[0] == "int-") {
+    if (this.Parent.CurrentScan.Internal.BinaryDataIsMz[0] == INT_MZ) {
      for (var i = 0; i < values.length; i = i+2) { 
       b.push(values[i]);
       a.push(values[i+1]);
@@ -374,6 +403,8 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
  //Format-specific regexes for data extraction
  //------------------------------------------------------------------------------
 
+ //The pattern [^] is a multiline single character wildcard (since . will not match \n)
+
  var regex = {};
  regex.mzML = {
   Index : /<indexListOffset>(\d+)<\/indexListOffset>/,
@@ -397,7 +428,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
    BinaryDataLength : /<binaryDataArray\s(?:[^]+\s)?encodedLength="(\d+)"/,
    CompressionType : /<cvParam\s(?:[^]+\s)?accession="MS:1000574" name="(zlib) compression"/,
    BinaryDataPrecision : /<cvParam\s(?:[^]+\s)?accession="(?:MS:1000521|MS:1000523)" name="(32|64)-bit float"/,
-   BinaryDataID : /<cvParam\s(?:[^]+\s)?accession="MS:(1000514|1000515)"/
+   BinaryDataIsMzFirst : /<cvParam\s(?:[^]+\s)?accession="MS:(1000514|1000515)"/
   }
  }
  regex.mzML.ScanKeys = Object.keys(regex.mzML.Scan);
@@ -422,7 +453,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
 //   BinaryDataLength :  /<peaks\s(?:[^]+\s)?compressedLen="(\d+)"/,  //usually inaccurate (or is mis-documented)
    CompressionType : /<peaks\s(?:[^]+\s)?compressionType="(.+?)"/,
    BinaryDataPrecision : /<peaks\s(?:[^]+\s)?precision="(32|64)"/,  
-   BinaryDataID : /<peaks\s(?:[^]+\s)?(?:contentType|pairOrder)=".*(-int|int-).*"/,
+   BinaryDataIsMzFirst : /<peaks\s(?:[^]+\s)?(?:contentType|pairOrder)=".*(-int|int-).*"/,
    BinaryDataEndianness : /<peaks\s(?:[^]+\s)?byteOrder="(.+?)"/
   }
  }
@@ -438,7 +469,7 @@ if (typeof zlib != 'undefined') MSLIB.Format.MzFile = function _SOURCE() {
   }
   var s = self.atob(t); //decode base64
   var bytes;
-  if (c && (c == "zlib")) {
+  if (c && (c == ZLIB)) {
    try {
     bytes = zlib.inflate(s); //inflate zlib
    }
