@@ -4,94 +4,93 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 MSLIB.Format.MsDataFile = function _SOURCE() {
 
- var MsDataFile = function(f) {
-  if (f) {
-   this.Reader     = new MSLIB.Common.Reader(f,this);
+ var _MsDataFile = function(file) {
+  if (file) {
+   this.reader     = new MSLIB.Common.Reader(file,this);
   }
   else {
-   this.Reader     = null;
+   this.reader     = null;
   }
-  MSLIB.Common.initialise.call(this);
-  this.FileType    = null;
-  this.Scans       = [];
-  this.Internal    = {Offsets: {}, Minutes: []};
-  this.CurrentScan = new MSLIB.Data.Scan();
+  MSLIB.Common.initialise(this);
+  this.fileType    = null;
+  this.scans       = [];
+  this.internal    = {offsets: {}, minutes: []};
+  this.currentScan = new MSLIB.Data.Scan();
  };
 
- MsDataFile.prototype.getFirstScanNumber = function() {
-  if (this.Scans.length) {
-   var s = this.Scans.findIndex((ele) => (typeof(ele) != 'undefined'));
-   return (s >= 0 ? s : null);
-  }
-  else return(null);
+ _MsDataFile.prototype.getFirstScanNumber = function() {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
+  var s = this.scans.findIndex((ele) => (typeof(ele) != 'undefined'));
+  return (s >= 0 ? s : null);
  };
  
- MsDataFile.prototype.getLastScanNumber = function() {
-  if (this.Scans.length) return(this.Scans.length-1);
-  else return(null);
+ _MsDataFile.prototype.getLastScanNumber = function() {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
+  return(this.scans.length-1);
  };
  
- MsDataFile.prototype.getPreviousScanNumber = function(s,mslevel) {
-  if ((typeof(s) === 'undefined') && (typeof(this.CurrentScan.ScanNumber) != 'undefined')) s = this.CurrentScan.ScanNumber;
-  var FirstScan = this.getFirstScanNumber();
-  if (!FirstScan || (s <= FirstScan)) return null;
-  if ((typeof(mslevel) === 'undefined') || isNaN(mslevel) || !Number.isInteger(mslevel) || (mslevel < 1)) {
-   if (this.Scans.length && this.Scans[s]) return(this.Scans[s].Previous || null);
+ _MsDataFile.prototype.getPreviousScanNumber = function(s,msLevel) {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
+  if ((typeof(s) === 'undefined') && (typeof(this.currentScan.scanNumber) != 'undefined')) s = this.currentScan.scanNumber;
+  var firstScan = this.getFirstScanNumber();
+  if (!firstScan || (s <= firstScan)) return null;
+  if ((typeof(msLevel) === 'undefined') || isNaN(msLevel) || !Number.isInteger(msLevel) || (msLevel < 1)) {
+   if (this.scans[s]) return(this.scans[s].previous || null);
    else return(null);
   }
   else {
-   do { s = this.getPreviousScanNumber(s) } while ((this.Scans[s].Scan.MsLevel != mslevel) && (s > FirstScan));
-   if (this.Scans[s].Scan.MsLevel == mslevel) return(s);
+   do { s = this.getPreviousScanNumber(s) } while ((this.scans[s].scanData[1] != msLevel) && (s > firstScan));
+   if (this.scans[s].scanData[1] == msLevel) return(s);
    else return(null);
   }
  };
  
- MsDataFile.prototype.getNextScanNumber = function(s,mslevel) {
-  if ((typeof(s) === 'undefined') && (typeof(this.CurrentScan.ScanNumber) != 'undefined')) s = this.CurrentScan.ScanNumber;
-  var LastScan = this.getLastScanNumber();
-  if (!LastScan || s >= LastScan) return(null);
-  if ((typeof(mslevel) === 'undefined') || isNaN(mslevel) || !Number.isInteger(mslevel) || (mslevel < 1)) {
-   if (this.Scans.length && this.Scans[s]) return(this.Scans[s].Next || null);
+ _MsDataFile.prototype.getNextScanNumber = function(s,msLevel) {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
+  if ((typeof(s) === 'undefined') && (typeof(this.currentScan.scanNumber) != 'undefined')) s = this.currentScan.scanNumber;
+  var lastScan = this.getLastScanNumber();
+  if (!lastScan || s >= lastScan) return(null);
+  if ((typeof(msLevel) === 'undefined') || isNaN(msLevel) || !Number.isInteger(msLevel) || (msLevel < 1)) {
+   if (this.scans[s]) return(this.scans[s].next || null);
    else return(null);
   }
   else {
-   do { s = this.getNextScanNumber(s); } while ((this.Scans[s].Scan.MsLevel != mslevel) && (s < LastScan));
-   if (this.Scans[s].Scan.MsLevel == mslevel) return(s);
+   do { s = this.getNextScanNumber(s); } while ((this.scans[s].scanData[1] != msLevel) && (s < lastScan));
+   if (this.scans[s].scanData[1] == msLevel) return(s);
    else return(null);
   }
  };
 
  var populateMinutes = function() {
-  this.Scans.forEach(function(ele) {
-   if (ele.Scan.RetentionTime) {
-    var minute = Math.round(ele.Scan.RetentionTime);
-    if (!this.Internal.Minutes[minute]) {
-     this.Internal.Minutes[minute] = [];
+  this.scans.forEach(function(ele) {
+   if (ele.scanData[1]) {
+    var minute = Math.round(ele.scanData[2]);
+    if (!this.internal.minutes[minute]) {
+     this.internal.minutes[minute] = [];
     }
-    this.Internal.Minutes[minute].push(ele.Scan.ScanNumber);
+    this.internal.minutes[minute].push(ele.scanData[0]);
    }
   },this);
  }
 
- MsDataFile.prototype.getNearestMSXScanNumberfromRT = function(mslevel,retention_time,match_low) {
-  if (!this.Ready) return null;
-  if (!this.Internal.Minutes.length) populateMinutes.call(this);
-  var S = this.Scans; // can't use thisArg in sorts
-  if (!S.length) return null;
-  var MS1ScanNumbers = S.filter((ele) => (ele.Scan.MsLevel == mslevel)).map((ele) => ele.Scan.ScanNumber);
-  var firstMSXRT = S[MS1ScanNumbers[0]].Scan.RetentionTime;
-  var lastMSXRT = S[MS1ScanNumbers[MS1ScanNumbers.length-1]].Scan.RetentionTime;
-  if (retention_time <= firstMSXRT) { return MS1ScanNumbers[0] };
-  if (retention_time >= lastMSXRT) { return MS1ScanNumbers[MS1ScanNumbers.length-1] };
-  var minute = Math.round(retention_time);
-  if (!this.Internal.Minutes[minute]) {
-   console.log("Cannot localise RT "+retention_time);
+ _MsDataFile.prototype.getNearestMSXScanNumberfromRT = function(msLevel,retentionTime,matchLow) {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
+  if (!this.internal.minutes.length) populateMinutes.call(this);
+  var S = this.scans; // can't use thisArg in sorts
+  var ms1ScanNumbers = S.filter((ele) => (ele.scanData[1] == msLevel)).map((ele) => ele.scanData[0]);
+  var firstMSXRT = S[ms1ScanNumbers[0]].scanData[2];
+  var lastMSXRT = S[ms1ScanNumbers[ms1ScanNumbers.length-1]].scanData[2];
+  if (retentionTime <= firstMSXRT) { return ms1ScanNumbers[0] };
+  if (retentionTime >= lastMSXRT) { return ms1ScanNumbers[ms1ScanNumbers.length-1] };
+  var minute = Math.round(retentionTime);
+  if (!this.internal.minutes[minute]) {
+   console.log("Cannot localise RT "+retentionTime);
    throw new Error("MsDataFileCannotLocaliseRT");
   }
-  var possibles = this.Internal.Minutes[minute].filter((p) => (S[p].Scan.MsLevel == mslevel));
+  var possibles = this.internal.minutes[minute].filter((p) => (S[p].scanData[1] == msLevel));
   //check for exact match
-  var exact_match = possibles.find((p) => (S[p].Scan.RetentionTime == retention_time));
-  if (exact_match) { return exact_match }
+  var exactMatch = possibles.find((p) => (S[p].scanData[2] == retentionTime));
+  if (exactMatch) { return exactMatch }
   else {
    //Otherwise find closest match
    var firstRTMinute = Math.round(firstMSXRT);
@@ -99,67 +98,69 @@ MSLIB.Format.MsDataFile = function _SOURCE() {
    var range = 0;
    do {
     range++;
-    var minute_to_add = minute + (match_low ? -range : range);
-    if ((minute_to_add < firstRTMinute) || (minute_to_add > lastRTMinute)) {
+    var minuteToAdd = minute + (matchLow ? -range : range);
+    if ((minuteToAdd < firstRTMinute) || (minuteToAdd > lastRTMinute)) {
      return null;
     }
-    possibles = possibles.concat(this.Internal.Minutes[minute_to_add].filter((p) => (S[p].Scan.MsLevel == mslevel)) || []);
+    possibles = possibles.concat(this.internal.minutes[minuteToAdd].filter((p) => (S[p].scanData[1] == msLevel)) || []);
    } while (possibles.length < 1);
    var m;
-   if (match_low) {
-    possibles.sort((a,b) => (S[b].Scan.RetentionTime-S[a].Scan.RetentionTime));
-    m = possibles.find((p) => (S[p].Scan.RetentionTime < retention_time));
+   if (matchLow) {
+    possibles.sort((a,b) => (S[b].scanData[2]-S[a].scanData[2]));
+    m = possibles.find((p) => (S[p].scanData[2] < retentionTime));
    }
    else {
-    possibles.sort((a,b) => (S[a].Scan.RetentionTime-S[b].Scan.RetentionTime));
-    m = possibles.find((p) => (S[p].Scan.RetentionTime > retention_time));
+    possibles.sort((a,b) => (S[a].scanData[2]-S[b].scanData[2]));
+    m = possibles.find((p) => (S[p].scanData[2] > retentionTime));
    }
    return typeof(m) != "undefined" ? m : null;
   }
  }
 
- MsDataFile.prototype.getNearestMSXRTfromRT = function(mslevel,retention_time,match_low) {
-  var s = this.getNearestMSXScanNumberfromRT(mslevel,retention_time,match_low);
-  return(s != null ? this.Scans[s].Scan.RetentionTime : null);
+ _MsDataFile.prototype.getNearestMSXRTfromRT = function(msLevel,retentionTime,matchLow) {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
+  var s = this.getNearestMSXScanNumberfromRT(msLevel,retentionTime,matchLow);
+  return(s != null ? this.scans[s].scanData[2]: null);
  }
  
- MsDataFile.prototype.getNearestMSXScanNumberfromScanNumber = function(mslevel,s,match_low) {
-  if (!this.Ready) return null;
+ _MsDataFile.prototype.getNearestMSXScanNumberfromScanNumber = function(msLevel,s,matchLow) {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
   var firstScan = this.getFirstScanNumber();
-  if (!this.Scans[s]) { //e.g. Might be an MS2+ and the mzFile only has MS1
-   while(--s >= firstScan) { if (this.Scans[s]) break };
+  if (!this.scans[s]) { //e.g. Might be an MS2+ and the mzFile only has MS1
+   while(--s >= firstScan) { if (this.scans[s]) break };
   };
-  if (!this.Scans[s]) return(null); //Still couldn't find the scan
-  if (this.Scans[s].Scan.MsLevel == mslevel) return(s);
-  if (match_low) return(this.getPreviousScanNumber(s,mslevel));
-  else return(this.getNextScanNumber(s,mslevel));
+  if (!this.scans[s]) return(null); //Still couldn't find the scan
+  if (this.scans[s].scanData[1] == msLevel) return(s);
+  if (matchLow) return(this.getPreviousScanNumber(s,msLevel));
+  else return(this.getNextScanNumber(s,msLevel));
  }
 
- MsDataFile.prototype.getNearestMSXRTfromScanNumber = function(mslevel,s,match_low) {
-  s = this.getNearestMSXScanNumberfromScanNumber(mslevel,s,match_low);
-  return(s != null ? this.Scans[s].Scan.RetentionTime : null);
+ _MsDataFile.prototype.getNearestMSXRTfromScanNumber = function(msLevel,s,matchLow) {
+  if (!this.scans.length) throw new Error("MsDataFileNoScans");
+  s = this.getNearestMSXScanNumberfromScanNumber(msLevel,s,matchLow);
+  return(s != null ? this.scans[s].scanData[2] : null);
  }
 
  //Async PlaceHolders
 
- MsDataFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) {
+ _MsDataFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) {
   throw new Error("MsDataFileFunctionNotImplemented");
  }
 
- MsDataFile.prototype.fetchScanHeader = function(scan,prefetchSpectrumData) {
+ _MsDataFile.prototype.fetchScanHeader = function(scan,prefetchSpectrumData) {
   throw new Error("MsDataFileFunctionNotImplemented");
  }
 
- MsDataFile.prototype.fetchAllScanHeaders = function() {
+ _MsDataFile.prototype.fetchAllScanHeaders = function() {
   throw new Error("MsDataFileFunctionNotImplemented");
  }
 
- MsDataFile.prototype.fetchSpectrumData = function() {
+ _MsDataFile.prototype.fetchSpectrumData = function() {
   throw new Error("MsDataFileFunctionNotImplemented");
  }
 
- MsDataFile._SOURCE = _SOURCE;
+ _MsDataFile._SOURCE = _SOURCE;
 
- return MsDataFile;
+ return _MsDataFile;
 
 }();

@@ -4,51 +4,51 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 MSLIB.Format.FastaFile = function _SOURCE() {
 
- var FastaFile = function(f) {
-  this.Reader            = new MSLIB.Common.Reader(f,this);
-  MSLIB.Common.initialise.call(this):
-  this.FileType               = "fasta";
-  this.AccessionParse         = new RegExp(/>(\S+)/);
-  this.DescriptionParse       = new RegExp(/\s(.+)$/);
-  this.Entries = {};
+ var _FastaFile = function(f) {
+  this.reader            = new MSLIB.Common.Reader(f,this);
+  MSLIB.Common.initialise(this):
+  this.fileType               = "fasta";
+  this.accessionParse         = new RegExp(/>(\S+)/);
+  this.descriptionParse       = new RegExp(/\s(.+)$/);
+  this.entries = {};
  };
  
- FastaFile.prototype.setParseRules = function(a,d) {
-  this.AccessionParse         = new RegExp(a);
-  this.DescriptionParse       = new RegExp(d);
+ _FastaFile.prototype.setParseRules = function(a,d) {
+  this.accessionParse         = new RegExp(a);
+  this.descriptionParse       = new RegExp(d);
  };
 
- FastaFile.prototype.load = function() {
-  if (!(this.AccessionParse && this.DescriptionParse)) return ("FastaFileNoParseRules");
-  MSLIB.Common.starting.call(this);
-  this.LastError = this.Reader.readText(
+ _FastaFile.prototype.load = function() {
+  if (!(this.accessionParse && this.descriptionParse)) return ("FastaFileNoParseRules");
+  MSLIB.Common.start(this);
+  this.reader.readText(
    function() {
     var text = this.result.replace(/\r\n?/gm,"\n");
     text = text.replace(/^>/gm,"__START__");
     var entries = text.split("__START__");
     entries.forEach(function(entry,i) {
-     MSLIB.Common.progress.call(this.Parent,((i/entries.length)*100).toFixed(2));
+     MSLIB.Common.progress(this.parent,((i/entries.length)*100).toFixed(2));
      if (entry.length) {
       var firstNewLine = entry.indexOf("\n");
       var entryheader = ">"+entry.substr(0,firstNewLine);
-      var entryacc = this.Parent.AccessionParse.exec(entryheader)[1];
-      var entrydesc = this.Parent.DescriptionParse.exec(entryheader)[1];
+      var entryacc = this.parent.accessionParse.exec(entryheader)[1];
+      var entrydesc = this.parent.descriptionParse.exec(entryheader)[1];
       if (!entryacc || !entrydesc) {
        console.log("Failed to parse "+entryheader);
        return;
       }
       var entrybody = entry.substr(firstNewLine);
       entrybody = entrybody.replace(/\n/gm,"");
-      this.Parent.Entries[entryacc]=[entrydesc,entrybody];
+      this.parent.entries[entryacc]=[entrydesc,entrybody];
      }
     },this);
-    MSLIB.Common.finished.call(this.Parent);
+    MSLIB.Common.finish(this.parent);
    }
   );
  };
 
- FastaFile._SOURCE = _SOURCE;
+ _FastaFile._SOURCE = _SOURCE;
 
- return FastaFile;
+ return _FastaFile;
 
 }();

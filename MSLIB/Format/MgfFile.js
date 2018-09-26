@@ -4,14 +4,14 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 MSLIB.Format.MgfFile = function _SOURCE() {
 
- var MgfFile = function(f) {
+ var _MgfFile = function(f) {
   MSLIB.Format.MsDataFile.call(this, f);
-  this.Reader.onprogress      = function(data) {
+  this.reader.onprogress      = function(data) {
    if (data.lengthComputable) {                                            
-    MSLIB.Common.progress.call(this,parseInt(((data.loaded/data.total)*100).toFixed(2)));
+    MSLIB.Common.progress(this,parseInt(((data.loaded/data.total)*100).toFixed(2)));
    }
   }
-  this.FileType               = "mgf";
+  this.fileType               = "mgf";
  };
 
  var headerParse = /^([^=]+)=(.+)$/;
@@ -19,9 +19,9 @@ MSLIB.Format.MgfFile = function _SOURCE() {
  var chargeParse = /^(\d+)\+?/;
  var mzIntPairParse = /^(\S+)\s+(\S+)$/;
 
- MgfFile.prototype.load = function() {
-  MSLIB.Common.starting.call(this);
-  this.LastError = this.Reader.readText(
+ _MgfFile.prototype.load = function() {
+  MSLIB.Common.start(this);
+  this.Reader.readText(
    function() {
     var text = this.result.replace(/\r\n?/gm,"\n");
     var entries = text.split("END IONS");
@@ -60,32 +60,32 @@ MSLIB.Format.MgfFile = function _SOURCE() {
        }
       }
       var scan = new MSLIB.Data.Scan();
-      scan.ScanNumber = i;
-      var pm_match = pepmassParse.exec(headers.PEPMASS);
-      if (pm_match[1]) {
-       scan.PrecursorMzs = [+pm_match[1]];
-       if (pm_match[2]) {
-        scan.PrecursorIntensities = [+pm_match[2]];
+      scan.scanNumber = i;
+      var pmMatch = pepmassParse.exec(headers.PEPMASS);
+      if (pmMatch[1]) {
+       scan.precursorMzs = [+pmMatch[1]];
+       if (pmMatch[2]) {
+        scan.precursorIntensities = [+pmMatch[2]];
        }
        if (headers.CHARGE) {
-        scan.PrecursorCharges = [+chargeParse.exec(headers.CHARGE)[1]];
+        scan.precursorCharges = [+chargeParse.exec(headers.CHARGE)[1]];
        }
        if (headers.RTINSECONDS) {
-        scan.RetentionTime = [headers.RTINSECONDS/60];
+        scan.retentionTime = [headers.RTINSECONDS/60];
        }
-       scan.Spectrum = new MSLIB.Data.Spectrum(mzs, ints);
-       scan.BasePeakMz = scan.Spectrum.getBasePeakMz();
-       scan.BasePeakIntensity = scan.Spectrum.getBasePeakIntensity(); 
-       scan.TotalCurrent = scan.Spectrum.getTotalIntensity();
-       scan.Internal.Headers = headers;
-       this.Parent.Scans[i] = {}
-       this.Parent.Scans[i].Scan = scan;
-       this.Parent.Scans[i].Length = entry.length;
+       scan.spectrum = new MSLIB.Data.Spectrum(mzs, ints);
+       scan.basePeakMz = scan.spectrum.getBasePeakMz();
+       scan.basePeakIntensity = scan.spectrum.getBasePeakIntensity(); 
+       scan.totalCurrent = scan.spectrum.getTotalIntensity();
+       scan.internal.headers = headers;
+       this.Parent.scans[i] = {}
+       this.Parent.scans[i].scanData = scan.toArray(true);
+       this.Parent.scans[i].length = entry.length;
        if (previousScan) {
-        this.Parent.Scans[previousScan].Next = i;
-        this.Parent.Scans[i].Previous = previousScan;
+        this.Parent.scans[previousScan].next = i;
+        this.Parent.scans[i].previous = previousScan;
        }
-       previousScan = scan.ScanNumber;
+       previousScan = scan.scanNumber;
       }
       else {
        console.log("Failed to parse Precursor mass from PEPMASS in "+i+":"+entry);
@@ -95,35 +95,35 @@ MSLIB.Format.MgfFile = function _SOURCE() {
       console.log("Failed to parse TITLE and PEPMASS from entry "+i+":"+entry);
      }
     },this);
-    MSLIB.Common.finished.call(this.Parent);
+    MSLIB.Common.finish(this.Parent);
    }
   );
  };
 
- MgfFile.prototype.export = function() {
+ _MgfFile.prototype.export = function() {
   var out = "";
-  this.Scans.forEach(function(s) {
-   var scan = s.Scan;
+  this.scans.forEach(function(s) {
+   var scan = new MSLIB.Scan(s.scanData);
    out += "BEGIN IONS\n";
-   out += ("TITLE=" + scan.Internal.Headers.TITLE + "\n");
-   out += ("PEPMASS=" + scan.PrecursorMzs[0]);
-   if (scan.PrecursorIntensities.length) out += (" " + scan.PrecursorIntensities[0]);
+   out += ("TITLE=" + scan.internal.headers.TITLE + "\n");
+   out += ("PEPMASS=" + scan.precursorMzs[0]);
+   if (scan.precursorIntensities.length) out += (" " + scan.precursorIntensities[0]);
    out += "\n";
-   Object.keys(scan.Internal.Headers).forEach(function(key) {
+   Object.keys(scan.internal.headers).forEach(function(key) {
     if ((key != "TITLE") && (key != "PEPMASS")) {
-     out += (key + "=" + scan.Internal.Headers[key])+"\n";
+     out += (key + "=" + scan.internal.headers[key])+"\n";
     }
    });
-   scan.Spectrum.mzs.forEach(function(mz,i) {
-    out += (mz + " " + scan.Spectrum.ints[i] + "\n");
+   scan.spectrum.mzs.forEach(function(mz,i) {
+    out += (mz + " " + scan.spectrum.ints[i] + "\n");
    });
    out += "END IONS\n";  
   });
   return out;
  }
 
- MgfFile._SOURCE = _SOURCE;
+ _MgfFile._SOURCE = _SOURCE;
 
- return MgfFile;
+ return _MgfFile;
 
 }();

@@ -4,34 +4,34 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 MSLIB.Format.TextTableFile = function _SOURCE() {
  
- var TextTableFile = function(f) {
-  this.Reader                 = new MSLIB.Common.Reader(f,this);
-  MSLIB.Common.initialise.call(this);
-  this.FileType               = "text_table";
+ var _TextTableFile = function(f) {
+  this.reader                 = new MSLIB.Common.Reader(f,this);
+  MSLIB.Common.initialise(this);
+  this.fileType               = "text_table";
   if (f.name.match(/\.csv$/i)) {
-   this.Delimiter = ",";
+   this.delimiter = ",";
   }
   else if (f.name.match(/\.tsv$/i) || f.name.match(/\.txt$/i)) {
-   this.Delimiter = "\t";
+   this.delimiter = "\t";
   }
   else {
-   this.Delimiter = "";
+   this.delimiter = "";
   }
-  this.UseFirstLineAsHeaders  = false;
-  this.Headers                = [];
-  this.Lines                  = [];
+  this.useFirstLineAsHeaders  = false;
+  this.headers                = [];
+  this.lines                  = [];
  };
  
- TextTableFile.prototype.load = function() {
-  MSLIB.Common.starting.call(this);
-  this.LastError = this.Reader.readText(
+ _TextTableFile.prototype.load = function() {
+  MSLIB.Common.start(this);
+  this.reader.readText(
    function() {
     var lines = this.result.replace(/\r\n?/gm,"\n").split("\n");
     while (!lines[lines.length-1].length) lines.pop(); // remove trailing blank lines
     lines.forEach(function(line,i) {
-     MSLIB.Common.progress.call(this.Parent,((i/lines.length)*100).toFixed(2));
-     if (this.Parent.Delimiter) {
-      var splitarr = line.split(this.Parent.Delimiter);
+     MSLIB.Common.progress(this.parent,((i/lines.length)*100).toFixed(2));
+     if (this.parent.delimiter) {
+      var splitarr = line.split(this.parent.delimiter);
       var fields = [];
       while (splitarr.length) {
        var field = splitarr.shift();
@@ -43,22 +43,22 @@ MSLIB.Format.TextTableFile = function _SOURCE() {
        }
        fields.push(field);
       }
-      this.Parent.Lines.push(fields);
+      this.parent.lines.push(fields);
      }
      else {
-      this.Parent.Lines.push([line]);
+      this.parent.lines.push([line]);
      }
     },this);
-    if (this.Parent.UseFirstLineAsHeaders && this.Parent.Lines.length && !this.Parent.Headers.length) {
-     this.Parent.Headers = this.Parent.Lines.shift();
+    if (this.parent.useFirstLineAsHeaders && this.parent.lines.length && !this.parent.headers.length) {
+     this.parent.headers = this.parent.lines.shift();
     }
-    MSLIB.Common.finished.call(this.Parent);
+    MSLIB.Common.finish(this.parent);
    }
   );
  };
 
- TextTableFile._SOURCE = _SOURCE;
+ _TextTableFile._SOURCE = _SOURCE;
 
- return TextTableFile;
+ return _TextTableFile;
 
 }();

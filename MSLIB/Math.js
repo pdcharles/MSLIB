@@ -4,109 +4,79 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 MSLIB.Math = function _SOURCE() {
  
  var log2 = function(x) {
-  return(Math.log(x)/Math.log(2));
+  return Math.log(x)/Math.log(2);
  };
 
+ var getNonSparseNumericArray = function(arr) {
+  if (!Array.isArray(arr)) throw new Error("MathArgumentIsNotArray");
+  return arr.map(ele => parseFloat(ele)).filter(ele => (ele !== null) && !isNaN(ele)).sort((a,b) => (a-b));
+ }
+
  var mean = function(arr) {
-  var nonsparsearr = arr.filter((ele) => (ele != null));
-  if (!nonsparsearr.length) return null;
-  else {
-   var total = nonsparsearr.reduce((a,b) => (a+b),0);
-   return total/nonsparsearr.length;
-  }
+  var safeArr = getNonSparseNumericArray(arr);
+  if (!safeArr.length) return null;
+  else return safeArr.reduce((a,b) => (a+b),0)/safeArr.length;
  };
- 
- var percentile = function(a,p) {
-  if ((typeof(a) == "object") && Array.isArray(a)) {
-   console.log("first argument to percentile must be an array");
-   return Number.NaN;
+
+ var median = function(arr) {
+  var safeArr = getNonSparseNumericArray(arr);
+  switch (safeArr.length) {
+   case 0 : return null;
+   case 1 : return safeArr[0];
+   default : {
+    var halfIndex = Math.floor(safeArr.length/2);
+    return safeArr.length % 2 ? safeArr[halfIndex] : mean(safeArr.slice(halfIndex-1,halfIndex+1));
+   }
   }
-  var r = (p * (a.length/100));
+ }
+
+ var mad = function(arr) {
+  var safeArr = getNonSparseNumericArray(arr);
+  if (!safeArr.length) return null;
+  var arrMedian = median(safeArr);
+  if (arrMedian === null) return null;
+  else return median(safeArr.map(ele => Math.abs(ele-arrMedian)))*1.4826;
+ }
+ 
+ var percentile = function(arr,p) {
+  var safeArr = getNonSparseNumericArray(arr);
+  var r = (p * (safeArr.length/100));
   var v;
   if (r < 1) {
-   v = a[0];
+   v = safeArr[0];
   }
-  else if (r > a.length) {
-   v = a[a.length-1];
+  else if (r > safeArr.length) {
+   v = safeArr[safeArr.length-1];
   }
   else if(!(r % 1)) {
-   v = a[r-1];
+   v = safeArr[r-1];
   }
   else {
    var k = Math.floor(r);
    var k1 = Math.ceil(r);
-   var pk = k * (100/a.length);
-   v = a[k-1] + (p-pk)*(a.length/100)*(a[k1-1]-a[k-1]);
+   var pk = k * (100/safeArr.length);
+   v = safeArr[k-1] + (p-pk)*(safeArr.length/100)*(safeArr[k1-1]-safeArr[k-1]);
   }
-  return(v);
+  return v;
  };
  
  var erfc = function(x) {
   var z = Math.abs(x);
   var t = 2.0/(2.0+z);
   var ans = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (1.48851587 + (t * (-0.82215223 + t * 0.17087277)))))))));
-  return( x >= 0.0 ? ans : 2.0-ans);
- };
- 
- //Based on code from Skyline statistics library
- var dotProduct = function(vector_a,vector_b) {
-  if ([vector_a,vector_b].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
-   console.log("both arguments to dotProduct must be an array");
-   return Number.NaN;
-  }
-  if (vector_a.length != vector_b.length) {
-   console.log("arguments to dotProduct must be of equal length");
-   return Number.NaN;
-  }
-  var sumCross = 0;
-  var sumLeft  = 0;
-  var sumRight = 0;
-  for (var i = 0, len = vector_a.length; i < len; i++) {
-   var left = vector_a[i];
-   var right = vector_b[i];
-   sumCross += left*right;
-   sumLeft += left*left;
-   sumRight += right*right;
-  }
-  if (sumLeft == 0 || sumRight == 0) {
-   return (sumLeft == 0 && sumRight == 0 ? 1.0 : 0);
-  }
-  else {
-   return Math.min(1.0, sumCross/Math.sqrt(sumLeft*sumRight));
-  }
- };
- 
- var normalisedSpectralContrastAngle = function(dotProduct) {
-  return (1 - Math.acos(dotProduct)*2/Math.PI);
- };
- 
- var unitLengthVector = function(arr) {
-  var total = arr.reduce((a,b) => (a+b));
-  return (total ? arr.map((a) => (a/total)) : arr);
- };
- 
- var sqrtVector = function(arr) {
-  return arr.map((a) => Math.sqrt(a));
- };
- 
- var sqrtUnitNormalisedSpectralContrastAngle = function(vector_a,vector_b) {
-  return normalisedSpectralContrastAngle(
-          dotProduct(
-           unitLengthVector(sqrtVector(vector_a)),
-           unitLengthVector(sqrtVector(vector_b))
-          )
-         );
+  return x >= 0.0 ? ans : 2.0-ans;
  };
  
  var avgPpmDiff = function(a,b) {
-  return (Math.abs(a-b)/((a+b)/2) * 1000000);
+  return Math.abs(a-b)/((a+b)/2) * 1e6;
  };
 
  var ppmError = function(mass,ppm) {
-  return (mass/1000000)*ppm;
+  return (mass/1e6) * ppm;
  };
 
  var movingAverageSmooth = function(arr,mar) {
+  if (!Array.isArray(arr)) throw new Error("MathArgumentIsNotArray");
   if (!arr.length) return null;
   if (arr.length <= (2*mar + 1)) return arr;
   mar = Math.round(mar);
@@ -122,45 +92,43 @@ MSLIB.Math = function _SOURCE() {
   return smth.slice(mar,smth.length-mar);
  }
 
- var maxima = function(arr,allow_ends) { //returns a binary vector of the same length where local maxima are indicated by trues
+ var maxima = function(arr,allowEnds) { //returns a binary vector of the same length where local maxima are indicated by trues
+  if (!Array.isArray(arr)) throw new Error("MathArgumentIsNotArray");
   if (!arr.length) return null;
   if (arr.length == 1) return [true];
-  var plateau_start = -1;
+  var plateauStart = -1;
   var difference = [0].concat(arr.slice(1).map((ele,i) => (ele - arr[i])));
-  if (allow_ends) { //don't report the ends of the array as maxima unless allow_ends set
+  if (allowEnds) { //don't report the ends of the array as maxima unless allowEnds set
    difference.unshift(1);
    difference.push(-1);
-   plateau_start = 0;
+   plateauStart = 0;
   }
-  var is_max = difference.map(() => false); 
+  var isMaxList = difference.map(() => false); 
   difference.slice(1).forEach(function(diff,i) { //difference[i] is the *previous* difference for the current diff
    if (diff < 0) {
-    if ((difference[i]) >= 0 && (plateau_start > -1)) {
-     is_max[Math.floor((i+plateau_start)/2)+1] = true;
-     plateau_start = -1; //end of a plateau
+    if ((difference[i]) >= 0 && (plateauStart > -1)) {
+     isMaxList[Math.floor((i+plateauStart)/2)+1] = true;
+     plateauStart = -1; //end of a plateau
     } 
    }
    else if (diff > 0) {
-    plateau_start = i;
+    plateauStart = i;
    }
   });
-  if (allow_ends) {
-   is_max.shift();
-   is_max.pop();
+  if (allowEnds) {
+   isMaxList.shift();
+   isMaxList.pop();
   }
-  return is_max;
+  return isMaxList;
  };
 
  return {
   log2          : log2,
   mean          : mean,
+  median        : median,
+  mad           : mad,
   percentile    : percentile,
   erfc          : erfc,
-  dotProduct    : dotProduct,
-  normalisedSpectralContrastAngle : normalisedSpectralContrastAngle,
-  unitLengthVector : unitLengthVector,
-  sqrtVector    : sqrtVector,
-  sqrtUnitNormalisedSpectralContrastAngle : sqrtUnitNormalisedSpectralContrastAngle,
   avgPpmDiff    : avgPpmDiff,
   ppmError      : ppmError,
   movingAverageSmooth : movingAverageSmooth,

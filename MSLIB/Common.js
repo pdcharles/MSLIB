@@ -13,139 +13,153 @@ MSLIB.Common = function _SOURCE() {
 
  if (!(self.File && self.FileReader && self.Blob)) throw new Error("Reader requires full File API support");
  
- var Reader = function(F,Parent) {
-  var R = new FileReader();
-  if ((typeof(F) == 'object') && F.constructor === File) {
-   R.File = F;
+ var Reader = function(file,parent) {
+
+  var _reader = function(file,parent) {
+   if ((typeof(file) == 'object') && file.constructor === File) this.file = file;
+   else throw new Error("ReaderInvalidFileObject");
+   initialise(this);
+   this.parent = parent;
+   this.position = 0;
+   this.fileReader = new fileReaderWithEventHandles(this);
   }
-  else {
-   throw new Error("ReaderInvalidFileObject");
+  _reader.prototype.readBinary = function(callback,pos,len) {
+   return readAs.call(this,this.fileReader.readAsArrayBuffer,callback,pos,len);
   }
-  R.Parent = Parent;
-  R.Position = 0;
-  R.Report = false;
-  R.readBinary = readBinary;
-  R.readText = readText;
-  R.Ready = true;
-  R.Progress = 100;
-  R.onprogress = function(e) { R.Progress = (e.lengthComputable ? (e.loaded/e.total)*100 : -1 ) };
-  R.onerror = (function(e) { console.log("Reader ("+this.File.name+"): Error - "+this.error.name)}).bind(R);
-  R.onabort = (function(e) { console.log("Reader ("+this.File.name+"): Aborted")}).bind(R);
-  return R;
+  _reader.prototype.readText = function(callback,pos,len) {
+   return readAs.call(this,this.fileReader.readAsText,callback,pos,len);
+  }
+
+  var fileReaderWithEventHandles = function(reader) {
+   var fr = new FileReader();
+   fr.onprogress = (function(e) { progress(this,(e.lengthComputable ? (e.loaded/e.total)*100 : -1 )) }).bind(reader);
+   fr.onerror = function(e) { throw new Error("ReaderError") };
+   if (reader.report) fr.onloadstart = (function(e) { console.log("Reader ("+this.file.name+"): Reading from file") }).bind(reader);
+   return fr;
+  }
+
+  var getFileSlice = function(pos,len) {
+   if (pos >= this.file.size) {
+    console.log("Error: Last valid file offset ("+(this.file.size-1)+") is before offset " + pos);
+    throw new Error("ReaderInvalidFileOffset");
+   }
+   else {
+    var fs;
+    if (len && (len < (this.file.size - pos))) {
+     fs = this.file.slice(pos, pos + len);
+     this.position = pos + len;
+    }
+    else {
+     fs = this.file.slice(pos);
+     this.position = this.file.size;
+    }
+    return(fs);
+   }
+  }
+  var readAs = function(method,callback,pos,len) {
+   if (this.fileReader.readyState == FileReader.LOADING) throw new Error("ReaderNotReady");
+   pos = pos > 0 ? pos: 0;
+   if (len <= 0) throw new Error("ReaderZeroLengthFileSlice");
+   if (this.report) {
+    console.log("Reader ("+this.file.name+"): Requested offsets "+pos+" to "+(len ? (pos+len) : this.file.size));
+    if (this.lastReadStart) console.log("Reader ("+this.file.name+"): Current buffer is offsets "+this.lastReadStart+" to "+(this.lastReadEnd));
+   }
+   if (this.lastReadStart && (pos >= this.lastReadStart) && ((pos+len) <= (this.lastReadEnd))) {
+    this.position = pos + len;
+    var cachepos = pos - this.lastReadStart;
+    if (this.report) console.log("Reader ("+this.file.name+"): Returning cache-offsets "+cachepos+" to "+(cachepos+len));
+    if (!this.cache) {
+     if (this.fileReader.result !== null) this.cache = this.fileReader.result.slice(0); //speed up repeated access (fileReader.result is slow to access)
+     else throw new Error("ReaderResultIsNull")
+    }
+    callAsync(callback.bind(new ReaderResult(this.cache.slice(cachepos, cachepos + len),this.parent,this.position)));
+   }
+   else {
+    if (this.lastReadStart) {
+     delete this.lastReadStart;
+     delete this.lastReadEnd;
+     delete this.cache;
+    }
+    var fs = getFileSlice.call(this,pos,len);
+    if (fs) {
+     if (this.report) console.log("Reader ("+this.file.name+"): New read of offsets "+pos+" to "+this.position);
+     this.lastReadStart = pos;
+     this.lastReadEnd = pos + len;
+     if (this.report) console.log("Reader ("+this.file.name+"): Calling "+method.name);
+     startRead.call(this,method,fs,callback);
+    }
+    else {
+     throw new Error("ReaderInvalidFileSlice");
+    }
+   }
+  }
+  var startRead = function(method,fs,callback) {
+   this.fileReader.onload = finishRead.bind(this,callback);
+   method.call(this.fileReader,fs)
+  }
+
+  var finishRead = function(callback) {
+   if (this.report) console.log("Reader ("+this.file.name+"): Read Complete");
+   callback.call(new ReaderResult(this.fileReader.result,this.parent,this.position));
+  }
+
+  return _reader;
+ }();
+
+ var ReaderResult = function(result,parent,position) {
+  this.result = result;
+  this.parent = parent;
+  this.position = position;
  };
 
- var getFileSlice = function(Pos,Len) {
-  if (Pos >= this.File.size) {
-   console.log("Error: Last valid file offset ("+(this.File.size-1)+") is before offset " + Pos);
-   throw new Error("ReaderInvalidFileOffset");
-  }
-  else {
-   var FS;
-   if (Len && (Len < (this.File.size - Pos))) {
-    FS = this.File.slice(Pos, Pos + Len);
-    this.Position = Pos + Len;
-   }
-   else {
-    FS = this.File.slice(Pos);
-    this.Position = this.File.size;
-   }
-   return(FS);
-  }
+ var initialise = function(obj) {
+  obj.ready = true;
+  obj.progress = 100;
+  obj.report = false;
  }
 
- var readBinary = function(Callback,Pos,Len) {
-  return readAs.call(this,this.readAsArrayBuffer,Callback,Pos,Len);
+ var start = function(obj) {
+  obj.ready = false;
+  obj.progress = 0;
  }
 
- var readText = function(Callback,Pos,Len) {
-  return readAs.call(this,this.readAsText,Callback,Pos,Len);
+ var progress = function(obj,p) {
+  obj.progress = p;
  }
 
- var readAs = function(Method,Callback,Pos,Len) {
-  if (this.readyState == 1) throw new Error("ReaderNotReady");
-  Pos = Pos > 0 ? Pos : 0;
-  Len = Len > 0 ? Len : 0;
-  if (this.Report) {
-   if (this.LastReadStart) console.log("Reader ("+this.File.name+"): Current buffer is offsets "+this.LastReadStart+" to "+(this.LastReadEnd));
-   console.log("Reader ("+this.File.name+"): Requested offsets "+Pos+" to "+(Len ? (Pos+Len) : this.File.size));
-  }
-  if (this.LastReadStart && (Pos >= this.LastReadStart) && ((Pos + Len) <= (this.LastReadEnd))) {
-   this.Position = Pos + Len;
-   var Pseudopos = Pos - this.LastReadStart;
-   //Return a pseudo reader element contaning result, parent and position.  Can't call reader methods on it though (would require duplication)
-   if (this.Report) console.log("Reader ("+this.File.name+"): Returning psuedo-offsets "+Pseudopos+" to "+(Pseudopos+Len));
-   if (!this.Cache) this.Cache = this.result.slice(0); //speed up repeated access (Reader.result is slow to access)
-   callAsync(Callback.bind({result: this.Cache.slice(Pseudopos, Pseudopos + Len), Parent: this.Parent, Position: this.Position}));
-  }
-  else {
-   if (this.LastReadStart) {
-    delete this.LastReadStart;
-    delete this.LastReadEnd;
-    delete this.Cache;
-   }
-   var FS = getFileSlice.call(this,Pos,Len);
-   if (FS) {
-    if (this.Report) console.log("Reader ("+this.File.name+"): New read of offsets "+Pos+" to "+this.Position);
-    this.LastReadStart = Pos;
-    this.LastReadEnd = Pos + Len;
-    this.onloadend = Callback.bind(this);
-    if (this.Report) console.log("Reader ("+this.File.name+"): Calling "+Method.name);
-    Method.call(this,FS);
-   }
-   else {
-    throw new Error("ReaderInvalidFileSlice");
-   }
+ var finish = function(obj) {
+  obj.ready = true;
+  obj.progress = 100;
+  if (obj.onReady) { 
+   var func = obj.onReady; 
+   delete(obj.onReady);
+   func();
   }
  }
 
- var initialise = function() {
-  this.Ready = true;
-  this.Progress = 100;
-  this.Report = false;
+ var whenReady = function(obj,func) {
+  if (obj.onReady) throw new Error("OnReadyFunctionExists");
+  if (obj.ready) func();
+  else obj.onReady = func;
  }
 
- var starting = function() {
-  this.Ready = false;
-  this.Progress = 0;
- }
-
- var progress = function(p) {
-  this.Progress = p;
- }
-
- var finished = function() {
-  this.Ready = true;
-  this.Progress = 100;
-  if (this.onReady) { 
-   var Func = this.onReady; 
-   delete(this.onReady);
-   Func();
-  }
- }
-
- var whenReady = function(Obj,Func) {
-  if (Obj.onReady) throw new Error("OnReadyFunctionExists");
-  if (Obj.Ready) Func();
-  else Obj.onReady = Func;
- }
-
- var getMSLIBWorkerURI = function(OnMessage,SelectCoreModules,ExtraModules,ExtraModuleNameSpaces) {
+ var getMSLIBWorkerURI = function(onMessage,coreModuleFilter,extraModules,extraModuleNamespaces,extraModuleFilters) {
   return URL.createObjectURL(new Blob([
-   getRecursiveSOURCE([MSLIB],["MSLIB"],SelectCoreModules).concat(getRecursiveSOURCE(ExtraModules,ExtraModuleNameSpaces),
-    "self.addEventListener(\"message\","+OnMessage.toString()+");"
+   getRecursiveSOURCE([MSLIB],["MSLIB"],[coreModuleFilter]).concat(getRecursiveSOURCE(extraModules,extraModuleNamespaces,extraModuleFilters),
+    "self.addEventListener(\"message\","+onMessage.toString()+");"
    ).join(";\n")
   ]));
  }
 
- var getRecursiveSOURCE = function(OArr,PArr,CArr) {
-  if (!OArr) return [];
-  else return [].concat.apply([],OArr.map((O,i) => {
-   if (!O) return [];
-   var Path = (PArr && PArr[i]);
-   if (!Path) return [];
-   var Declaration = (Path.indexOf(".") < 0 ? "var " : "")+Path+"=";
-   if (O._SOURCE) return Declaration+O._SOURCE.toString()+"()";
-   else return [].concat.apply([Declaration+"{}"],Object.keys(O).map((K) => (CArr && !CArr.find((E)=>(E==K))) ? [] : getRecursiveSOURCE([O[K]],[Path+"."+K],CArr)));
+ var getRecursiveSOURCE = function(objects,namespaces,filter) {
+  if (!objects) return [];
+  else return [].concat.apply([],objects.map((o,i) => {
+   if (!o) return [];
+   var namespace = (namespaces && namespaces[i]);
+   if (!namespace) return [];
+   var declaration = (namespace.indexOf(".") < 0 ? "var " : "")+namespace+"=";
+   if (o._SOURCE) return declaration+o._SOURCE.toString()+"()";
+   else return [].concat.apply([declaration+"{}"],Object.keys(o).map((k) => (filter[i] && filter[i].length && !filter[i].find(e=>(e==k))) ? [] : getRecursiveSOURCE([o[k]],[namespace+"."+k],[filter[i]])));
   }));
  }
 
@@ -153,9 +167,9 @@ MSLIB.Common = function _SOURCE() {
   callAsync: callAsync,
   Reader: Reader,
   initialise: initialise,
-  starting: starting,
+  start: start,
   progress: progress,
-  finished: finished,
+  finish: finish,
   whenReady: whenReady,
   getMSLIBWorkerURI : getMSLIBWorkerURI,
   _SOURCE: _SOURCE

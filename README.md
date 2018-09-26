@@ -32,8 +32,4 @@ sqlite (required for reading .msf and .blib files, both of which are SQLite
 https://github.com/kripken/sql.js/
  => sql.js
 
-Once downloaded, the dependencies should be loaded in the header of your page e.g.
-<script src="mslib/distrib/zlib/pako_inflate.1.0.3.min.js"></script>
-<script src="mslib/distrib/zip/zip.js"></script>
-<script src="mslib/distrib/zip/inflate.js"></script>
-<script src="mslib/distrib/sqlite/sql.js"></script>
+Once downloaded, the dependencies should be loaded in the header of your page along with the required MSLIB modules

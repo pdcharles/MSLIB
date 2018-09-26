@@ -4,44 +4,44 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 if (typeof SQL) MSLIB.Format.SQLiteFile = function _SOURCE() {
 
- var SQLiteFile = function(f) {
+ var _SQLiteFile = function(f) {
   if (!f) {
    console.log("Error: file path not specified");
    return {};
   }
-  this.Reader      = new MSLIB.Common.Reader(f,this);
-  this.Reader.onprogress = function(data) {
+  this.reader      = new MSLIB.Common.Reader(f,this);
+  this.reader.onprogress = function(data) {
    if (data.lengthComputable) {                                            
-    MSLIB.Common.progress.call(this,((data.loaded/data.total)*100).toFixed(2));
+    MSLIB.Common.progress(this,((data.loaded/data.total)*100).toFixed(2));
    }
   }
-  MSLIB.Common.initialise.call(this):
-  this.FileType    = "generic_sqlite";
-  this.Database    = {};
-  this.Query       = {SQL: "", Result: {}};
+  MSLIB.Common.initialise(this):
+  this.fileType    = "generic_sqlite";
+  this.database    = {};
+  this.query       = {sql: "", result: {}};
  };
 
- SQLiteFile.prototype.openDB = function() {
-  MSLIB.Common.starting.call(this);
-  this.LastError = this.Reader.readBinary(
+ _SQLiteFile.prototype.openDB = function() {
+  MSLIB.Common.start(this);
+  this.Reader.readBinary(
    function() {
-    this.Parent.Database = new SQL.Database(new Uint8Array(this.result));
-    MSLIB.Common.finished.call(this.Parent);
+    this.parent.database = new SQL.Database(new Uint8Array(this.result));
+    MSLIB.Common.finished.call(this.parent);
    }
   );
  }
 
- SQLiteFile.prototype.queryDB = function(q) {
-  if (!this.Ready) return("SQLiteFileNotReady");
-  if (!this.Database) return("SQLiteFileDatabaseNotOpen");
-  MSLIB.Common.starting.call(this);
-  this.Query.SQL = q.replace(/\n/g, '; ');
+ _SQLiteFile.prototype.queryDB = function(q) {
+  if (!this.ready) return("SQLiteFileNotReady");
+  if (!this.database) return("SQLiteFileDatabaseNotOpen");
+  MSLIB.Common.start(this);
+  this.query.sql = q.replace(/\n/g, '; ');
   MSLIB.Common.callAsync(function() {
-    this.Query.Result = {};
+    this.query.result = {};
     try {
-     var jsondata = this.Database.exec(this.Query.SQL);
-     this.Query.Result.Columns = jsondata[0]["columns"];
-     this.Query.Result.Data = jsondata[0]["values"];
+     var jsondata = this.database.exec(this.query.SQL);
+     this.query.result.columns = jsondata[0]["columns"];
+     this.query.result.data = jsondata[0]["values"];
     } 
     catch(err) {
      console.log("Error: " + err);
@@ -51,10 +51,10 @@ if (typeof SQL) MSLIB.Format.SQLiteFile = function _SOURCE() {
   );
  };
 
- SQLiteFile._SOURCE = _SOURCE;
+ _SQLiteFile._SOURCE = _SOURCE;
 
- return SQLiteFile;
+ return _SQLiteFile;
 
 }();
 
-else console.log("Warning: SQLiteFile requires SQL library!");
+else throw new Error("SQLiteFileNoSQL");

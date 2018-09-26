@@ -4,25 +4,25 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Format == 'undefined') MSLIB.Format = {};
 MSLIB.Format.XmlFile = function _SOURCE() {
  
- var XmlFile = function(f) {
-  this.Reader                 = new MSLIB.Common.Reader(f,this);
-  MSLIB.Common.initialise.call(this);
-  this.FileType               = "xml";
-  this.DocRoot                = null;
+ var _XmlFile = function(f) {
+  this.reader                 = new MSLIB.Common.Reader(f,this);
+  MSLIB.Common.initialise(this);
+  this.fileType               = "xml";
+  this.docRoot                = null;
  };
  
- XmlFile.prototype.load = function() {
-  MSLIB.Common.starting.call(this);
-  this.LastError = this.Reader.readText(
+ _XmlFile.prototype.load = function() {
+  MSLIB.Common.start(this);
+  this.reader.readText(
    function() {
-    this.Parent.DocRoot = (new DOMParser()).parseFromString(this.result, "text/xml");
-    MSLIB.Common.finished.call(this.Parent);
+    this.Parent.docRoot = (new DOMParser()).parseFromString(this.result, "text/xml");
+    MSLIB.Common.finish(this.parent);
    }
   );
  };
 
- XmlFile._SOURCE = _SOURCE;
+ _XmlFile._SOURCE = _SOURCE;
 
- return XmlFile;
+ return _XmlFile;
 
 }();

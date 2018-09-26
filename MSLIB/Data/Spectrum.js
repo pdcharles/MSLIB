@@ -4,39 +4,29 @@ if (typeof MSLIB == 'undefined') var MSLIB = {};
 if (typeof MSLIB.Data == 'undefined') MSLIB.Data = {};
 MSLIB.Data.Spectrum = function _SOURCE() {
 
- var Spectrum = function(mzs,ints) {
-  if ([mzs,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
-   console.log("both arguments to Spectrum must be an array");
-   return {};
-  }
-  if (mzs.length != ints.length) {
-   console.log("both arguments to Spectrum must be of equal length");
-   return {};
-  }
+ var _Spectrum = function(mzs,ints) {
+  if ([mzs,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) throw new Error("SpectrumArgumentNotArray");
+  if (mzs.length != ints.length) throw new Error("SpectrumArgumentsUnequalLength");
   this.mzs = mzs.map((v) => parseFloat(v));
+  if (!this.mzs.every((e,i,a) => i == 0 || a[i-1] <= e)) throw new Error("SpectrumMzsNotOrderedAscending");
   this.ints = ints.map((v) => parseFloat(v));
-  if (!this.mzs.every((e,i,a) => i == 0 || a[i-1] <= e)) {
-   console.log("mzs provided for Spectrum must be sorted in ascending order");
-   console.log(this.mzs);
-   return {};
-  }
  }
 
- Spectrum.prototype.clone = function() {
-  return new Spectrum(this.mzs,this.ints);
+ _Spectrum.prototype.clone = function() {
+  return new _Spectrum(this.mzs,this.ints);
  };
 
- Spectrum.prototype.getCroppedSpectrum = function(mz_min,mz_max) {
+ _Spectrum.prototype.getCroppedSpectrum = function(mz_min,mz_max) {
   var mask = this.mzs.map((ele,i) => ((ele >= mz_min) && (ele <= mz_max)));
   var start = mask.indexOf(true);
   var end = mask.lastIndexOf(true);
-  return new Spectrum(
+  return new _Spectrum(
    this.mzs.slice(start,end+1),
    this.ints.slice(start,end+1)
   )
  };
 
- Spectrum.prototype.getMinMz = function() {
+ _Spectrum.prototype.getMinMz = function() {
   if(!this.mzs.length) {
    return 0;
   }
@@ -45,7 +35,7 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   }
  };
 
- Spectrum.prototype.getMaxMz = function() {
+ _Spectrum.prototype.getMaxMz = function() {
   if(!this.mzs.length) {
    return 0;
   }
@@ -54,7 +44,7 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   }
  };
 
- Spectrum.prototype.getMaxIntensity = function() {
+ _Spectrum.prototype.getMaxIntensity = function() {
   if(!this.ints.length) {
    return 0;
   }
@@ -63,7 +53,7 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   }
  };
 
- Spectrum.prototype.getTotalIntensity = function() {
+ _Spectrum.prototype.getTotalIntensity = function() {
   if(!this.ints.length) {
    return 0;
   }
@@ -72,7 +62,7 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   }
  };
 
- Spectrum.prototype.getBasePeakIndex = function() {
+ _Spectrum.prototype.getBasePeakIndex = function() {
   var maxIndex = 0;
   var maxInt = 0;
   for (var i in this.ints) {
@@ -84,15 +74,15 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   return(maxIndex);
  };
 
- Spectrum.prototype.getBasePeakMz = function() {
+ _Spectrum.prototype.getBasePeakMz = function() {
   return(this.mzs[this.getBasePeakIndex()]);
  };
 
- Spectrum.prototype.getBasePeakIntensity = function() {
+ _Spectrum.prototype.getBasePeakIntensity = function() {
   return(this.ints[this.getBasePeakIndex()]);
  };
 
- Spectrum.prototype.getMatchedSpectra = function(comparator,mzPPMError) {
+ _Spectrum.prototype.getMatchedSpectra = function(comparator,mzPPMError) {
   if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
    console.log("can only getMatchedSpectra against another Spectrum (or object with mzs and int)");
    return Number.NaN;
@@ -158,7 +148,57 @@ MSLIB.Data.Spectrum = function _SOURCE() {
           ]);
  };
 
- Spectrum.prototype.getNormalisedSpectralContrastAngleTo = function(comparator,mzPPMError) {
+ //Based on code from Skyline statistics library
+ var dotProduct = function(vector_a,vector_b) {
+  if ([vector_a,vector_b].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
+   console.log("both arguments to dotProduct must be an array");
+   return Number.NaN;
+  }
+  if (vector_a.length != vector_b.length) {
+   console.log("arguments to dotProduct must be of equal length");
+   return Number.NaN;
+  }
+  var sumCross = 0;
+  var sumLeft  = 0;
+  var sumRight = 0;
+  for (var i = 0, len = vector_a.length; i < len; i++) {
+   var left = vector_a[i];
+   var right = vector_b[i];
+   sumCross += left*right;
+   sumLeft += left*left;
+   sumRight += right*right;
+  }
+  if (sumLeft == 0 || sumRight == 0) {
+   return (sumLeft == 0 && sumRight == 0 ? 1.0 : 0);
+  }
+  else {
+   return Math.min(1.0, sumCross/Math.sqrt(sumLeft*sumRight));
+  }
+ };
+ 
+ var normalisedSpectralContrastAngle = function(dotProduct) {
+  return (1 - Math.acos(dotProduct)*2/Math.PI);
+ };
+ 
+ var unitLengthVector = function(arr) {
+  var total = arr.reduce((a,b) => (a+b));
+  return (total ? arr.map((a) => (a/total)) : arr);
+ };
+ 
+ var sqrtVector = function(arr) {
+  return arr.map((a) => Math.sqrt(a));
+ };
+ 
+ var sqrtUnitNormalisedSpectralContrastAngle = function(vector_a,vector_b) {
+  return normalisedSpectralContrastAngle(
+          dotProduct(
+           unitLengthVector(sqrtVector(vector_a)),
+           unitLengthVector(sqrtVector(vector_b))
+          )
+         );
+ };
+
+ _Spectrum.prototype.getNormalisedSpectralContrastAngleTo = function(comparator,mzPPMError) {
   if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
    console.log("can only getNormalisedSpectralContrastAngleTo another Spectrum (or object with mzs and int)");
    return Number.NaN;
@@ -166,30 +206,64 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   if (typeof(mzPPMError) == "undefined") {
    mzPPMError = 5.0;
   }
-  var matched_spectra = Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
-  return MSLIB.Math.sqrtUnitNormalisedSpectralContrastAngle(matched_spectra[0][1],matched_spectra[1][1]);
+  var matchedSpectra = _Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
+  return sqrtUnitNormalisedSpectralContrastAngle(matchedSpectra[0][1],matchedSpectra[1][1]);
  };
 
- Spectrum.prototype.getSimilarityScoreAgainst = function(comparator,mzPPMError) {
+ _Spectrum.prototype.getNormalisedWeightedEuclideanDistanceFrom = function(comparator,mzPPMError) {
   if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
-   console.log("can only getSimilarityScoreAgainst another Spectrum (or object with mzs and int)");
+   console.log("can only getWeightedEuclideanDistanceFrom another Spectrum (or object with mzs and int)");
    return Number.NaN;
   }
   if (typeof(mzPPMError) == "undefined") {
    mzPPMError = 5.0;
   }
-  var matched_spectra = Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
-  var sum_0 = matched_spectra[0][1].reduce((a,b)=>a+b,0);
-  var sum_1 = matched_spectra[1][1].reduce((a,b)=>a+b,0);
-  var proportions_0 = matched_spectra[0][1].map(e=>e/sum_0);
-  var proportions_1 = matched_spectra[1][1].map(e=>e/sum_1);
-  var squared_diffs_weighted = proportions_0.map((e,i)=>Math.pow(proportions_1[i]-e,2)*proportions_1[i]);
-  return 1-Math.sqrt(squared_diffs_weighted.reduce((a,b)=>a+b));
+  var matchedSpectra = _Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
+  var sumP = matchedSpectra[0][1].reduce((a,b)=>a+b,0);
+  var sumQ = matchedSpectra[1][1].reduce((a,b)=>a+b,0);
+  var proportionsP = matchedSpectra[0][1].map(inten=>inten/sumP);
+  var proportionsQ = matchedSpectra[1][1].map(inten=>inten/sumQ);
+  var squaredDiffsWeighted = proportionsP.map((propP,i)=>propP*Math.pow(propP-proportionsQ[i],2));
+  return 1-Math.sqrt(squaredDiffsWeighted.reduce((a,b)=>a+b));
  };
 
+ _Spectrum.prototype.getNormalisedEuclideanDistanceFrom = function(comparator,mzPPMError) {
+  if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
+   console.log("can only getEuclideanDistanceFrom another Spectrum (or object with mzs and int)");
+   return Number.NaN;
+  }
+  if (typeof(mzPPMError) == "undefined") {
+   mzPPMError = 5.0;
+  }
+  var matchedSpectra = _Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
+  var sumP = matchedSpectra[0][1].reduce((a,b)=>a+b,0);
+  var sumQ = matchedSpectra[1][1].reduce((a,b)=>a+b,0);
+  var proportionsP = matchedSpectra[0][1].map(inten=>inten/sumP);
+  var proportionsQ = matchedSpectra[1][1].map(inten=>inten/sumQ);
+  var squaredDiffs = proportionsP.map((propP,i)=>Math.pow(propP-proportionsQ[i],2));
+  return 1-Math.sqrt(squaredDiffs.reduce((a,b)=>a+b));
+ };
 
- Spectrum._SOURCE = _SOURCE;
+ _Spectrum.prototype.getNormalisedKullbackLeiblerDivergenceFrom = function(comparator,mzPPMError) {
+  if ((typeof(comparator) != "object") || !((comparator.constructor == this.constructor) || (comparator.mzs && comparator.ints))) {
+   console.log("can only getKullbackLeiblerDivergenceFrom another Spectrum (or object with mzs and int)");
+   return Number.NaN;
+  }
+  if (typeof(mzPPMError) == "undefined") {
+   mzPPMError = 5.0;
+  }
+  var matchedSpectra = _Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
+  matchedSpectra[0][1] = matchedSpectra[0][1].map((inten,i) => matchedSpectra[1][1][i] ? inten : 0);
+  var sumP = matchedSpectra[0][1].reduce((a,b)=>a+b,0);
+  var sumQ = matchedSpectra[1][1].reduce((a,b)=>a+b,0);
+  var proportionsP = matchedSpectra[0][1].map(inten=>inten/sumP);
+  var proportionsQ = matchedSpectra[1][1].map(inten=>inten/sumQ);
+  var kld = proportionsP.map((propP,i)=> propP ? propP*Math.log(propP/proportionsQ[i]) : 0).reduce((a,b)=>a+b);
+  return(2-2/(1+Math.exp(-kld)));
+ };
 
- return Spectrum;
+ _Spectrum._SOURCE = _SOURCE;
+
+ return _Spectrum;
 
 }();

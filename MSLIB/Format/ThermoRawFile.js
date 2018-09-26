@@ -6,166 +6,167 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
 
  const ANALYSER = ["ITMS","TQMS","SQMS","TOFMS","FTMS","Sector"];
 
- var ThermoRawFile = function(f) {
+ var _ThermoRawFile = function(f) {
   MSLIB.Format.MsDataFile.call(this, f);
   if (f.name.match(/\.raw$/i)) {
-   this.FileType = "thermo_raw";
+   this.fileType = "thermo_raw";
   }
   else {
    throw new Error("ThermoRawFileInvalidFileType");
   }
-  this.FetchProfileSpectraWhenAvailable = 1;
+  this.fetchProfileSpectraWhenAvailable = true;
  };
- ThermoRawFile.prototype = Object.create(MSLIB.Format.MsDataFile.prototype);
+ _ThermoRawFile.prototype = Object.create(MSLIB.Format.MsDataFile.prototype);
 
- var Verbosity = false;
+ var verbose = false;
 
  //------------------------------------------------------------------------------
  //ThermoRawFile ASync methods
  //------------------------------------------------------------------------------
 
- ThermoRawFile.prototype.fetchScanOffsets = function(prefetchScanHeaders) { //Nested calls to get all file headers at once
-  //prefetchScanHeaders not used (they have to be fetched either way)
-  if (!this.Ready) throw new Error("ThermoRawFileNotReady");
-  MSLIB.Common.starting.call(this);
-  this.LastError = this.Reader.readBinary(function() {
+ _ThermoRawFile.prototype.fetchScanoffsets = function(prefetchscanHeaders) { //Nested calls to get all file headers at once
+  //prefetchscanHeaders not used (they have to be fetched either way)
+  if (!this.ready) throw new Error("ThermoRawFileNotReady");
+  MSLIB.Common.start(this);
+  this.reader.readBinary(function() {
     (function() {
-     this.LastError = fetchStruct.call(this,(function(s){
-      this.Internal.Header = s;
-      this.Internal.Offsets.SequencerRow = this.Reader.Position;
-      this.LastError = fetchStruct.call(this,(function(s){
-       this.Internal.SequencerRow = s;
-       this.Internal.Offsets.AutoSamplerInfo = this.Reader.Position;
-       this.LastError = fetchStruct.call(this,(function(s){
-        this.Internal.AutoSamplerInfo = s;
-        this.Internal.Offsets.RawFileInfo = this.Reader.Position;
-        this.LastError = fetchStruct.call(this,(function(s){
-         this.Internal.RawFileInfo = s;
-         this.Internal.Offsets.RunHeaders = this.Internal.RawFileInfo.RunHeaderAddr.map((ele) => ele.Offset);
-         this.Internal.RunHeaders = [];
-         fetchRunHeaders.call(this);
-        }).bind(this),null,RawFileInfo);        
-       }).bind(this),null,AutoSamplerInfo);
-      }).bind(this),null,SequencerRow);
-     }).bind(this),0,Header);
-    }).call(this.Parent);
+     fetchStruct.call(this,(function(s){
+      this.internal.header = s;
+      this.internal.offsets.sequencerRow = this.reader.position;
+      fetchStruct.call(this,(function(s){
+       this.internal.sequencerRow = s;
+       this.internal.offsets.autoSamplerInfo = this.reader.position;
+       fetchStruct.call(this,(function(s){
+        this.internal.autoSamplerInfo = s;
+        this.internal.offsets.rawFileInfo = this.reader.position;
+        fetchStruct.call(this,(function(s){
+         this.internal.rawFileInfo = s;
+         this.internal.offsets.runHeaders = this.internal.rawFileInfo.runHeaderAddr.map((ele) => ele.offset);
+         this.internal.runHeaders = [];
+         fetchrunHeaders.call(this);
+        }).bind(this),null,rawFileInfo);        
+       }).bind(this),null,autoSamplerInfo);
+      }).bind(this),null,sequencerRow);
+     }).bind(this),0,header);
+    }).call(this.parent);
    },
    0,
    1420 // First 1420 bytes are fixed and can be prebuffered
   );
  };
 
- //fetchScanOffsets callbacks
- var fetchRunHeaders = function() {
-  if (this.Internal.Offsets.RunHeaders.length && (this.Internal.Offsets.RunHeaders[this.Internal.Offsets.RunHeaders.length-1] < this.Reader.File.size)) {
-   if (this.Internal.RunHeaders.length < this.Internal.Offsets.RunHeaders.length) {
-    this.LastError = fetchStruct.call(this,(function(s){
-     this.Internal.RunHeaders.push(s); 
-     fetchRunHeaders.call(this);
-    }).bind(this),this.Internal.Offsets.RunHeaders[this.Internal.RunHeaders.length],RunHeader);
+ //fetchScanoffsets callbacks
+ var fetchrunHeaders = function() {
+  if (this.internal.offsets.runHeaders.length && (this.internal.offsets.runHeaders[this.internal.offsets.runHeaders.length-1] < this.reader.File.size)) {
+   if (this.internal.runHeaders.length < this.internal.offsets.runHeaders.length) {
+    fetchStruct.call(this,(function(s){
+     this.internal.runHeaders.push(s); 
+     fetchrunHeaders.call(this);
+    }).bind(this),this.internal.offsets.runHeaders[this.internal.runHeaders.length],runHeader);
    }
    else {
-    this.Internal.MSRunHeader = null;
-    for (var i in this.Internal.RunHeaders) {
-     if (this.Internal.Offsets.ScanEventList = this.Internal.RunHeaders[i].ScanTrailerAddr) { //Find a RunHeader with defined ScanTrailerAddr (=mass spec device)
-      this.Internal.Offsets.ScanHeaderList = this.Internal.RunHeaders[i].ScanHeaderAddr;
-      this.Internal.MSRunHeader = this.Internal.RunHeaders[i];
+    this.internal.msRunHeader = null;
+    for (var i in this.internal.runHeaders) {
+     if (this.internal.offsets.scanEventList = this.internal.runHeaders[i].scanTrailerAddr) { //Find a runHeader with defined scanTrailerAddr (=mass spec device)
+      this.internal.offsets.scanHeaderList = this.internal.runHeaders[i].scanHeaderAddr;
+      this.internal.msRunHeader = this.internal.runHeaders[i];
       break;
      }
     }
-    if (this.Internal.MSRunHeader != null) {
-     this.Internal.NScans = this.Internal.MSRunHeader.LastScanNumber - this.Internal.MSRunHeader.FirstScanNumber + 1;
-     fetchScanHeaderList.call(this);
+    if (this.internal.msRunHeader != null) {
+     this.internal.nScans = this.internal.msRunHeader.LastScanNumber - this.internal.msRunHeader.firstScanNumber + 1;
+     fetchscanHeaderList.call(this);
     }
     else {
-     console.log("Error: cannot find MSRunHeader in file");
+     console.log("Error: cannot find msRunHeader in file");
     }
    }
   }
   else {
-  console.log("Error retrieving RunHeaders");
+  console.log("Error retrieving runHeaders");
   } 
  }
 
- var fetchScanHeaderList = function() {
-  this.LastError = this.Reader.readBinary(function() { // Pre-buffer
+ var fetchscanHeaderList = function() {
+  this.reader.readBinary(function() { // Pre-buffer
     (function() {
-     this.LastError = fetchStruct.call(this,(function(s){
-      this.Internal.ScanHeaderList = s;
+     fetchStruct.call(this,(function(s){
+      this.internal.scanHeaderList = s;
       var prevSN = null;
-      this.Internal.ScanHeaderList.ScanHeaders.forEach(function(H,i) {
-       var s = H.Index+1;
-       var E = this.Internal.ScanHeaderList.ScanEvents[i];
-       this.Scans[s] = {};
-       this.Scans[s].Offset = H.Offset + this.Internal.MSRunHeader.DataAddr;
-       this.Scans[s].Length = H.DataPacketSize;
-       this.Scans[s].Scan   = new MSLIB.Data.Scan();
-       this.Scans[s].Scan.ScanNumber         = s;
-       this.Scans[s].Scan.MsLevel            = E.SEPreamble[6];
-       this.Scans[s].Scan.RetentionTime      = H.Time;
-       this.Scans[s].Scan.LowMz              = H.LowMz;
-       this.Scans[s].Scan.HighMz             = H.HighMz;
-       this.Scans[s].Scan.TotalCurrent       = H.TotalCurrent;
-       this.Scans[s].Scan.BasePeakMz         = H.BaseMz;
-       this.Scans[s].Scan.BasePeakIntensity  = H.BaseIntensity;
-       this.Scans[s].Scan.Analyser           = (E.SEPreamble[40] >= ANALYSER.length ? undefined : ANALYSER[E.SEPreamble[40]]);
-       this.Scans[s].Scan.Internal.HzConversionParams = [E.NParam,E.A,E.B,E.C];
-       if (E.NPrecursors) {
-        this.Scans[s].Scan.PrecursorMzs      = (E.NPrecursors > 1 ? E.Reaction.map((ele) => ele.PrecursorMz) : [E.Reaction.PrecursorMz]);
+      this.internal.scanHeaderList.scanHeaders.forEach(function(h,i) {
+       var s = h.Index+1;
+       var e = this.internal.scanHeaderList.scanEvents[i];
+       this.scans[s] = {};
+       this.scans[s].offset = H.offset + this.internal.msRunHeader.dataAddr;
+       this.scans[s].length = H.DataPacketSize;
+       var scan = new MSLIB.Data.Scan();
+       scan.scanNumber         = s;
+       scan.msLevel            = e.sePreamble[6];
+       scan.retentionTime      = h.Time;
+       scan.lowMz              = h.LowMz;
+       scan.highMz             = h.HighMz;
+       scan.totalCurrent       = h.TotalCurrent;
+       scan.basePeakMz         = h.BaseMz;
+       scan.basePeakIntensity  = h.BaseIntensity;
+       scan.analyser           = (e.sePreamble[40] >= ANALYSER.length ? undefined : ANALYSER[e.sePreamble[40]]);
+       scan.internal.hzConversionParams = [e.nParam,e.a,e.b,e.c];
+       if (e.nPrecursors) {
+        scan.precursorMzs      = (e.nPrecursors > 1 ? e.reaction.map((ele) => ele.precursorMz) : [e.reaction.precursorMz]);
        }
+       this.scans[s].scanData = scan.toArray();
        if (prevSN != null) {
-        this.Scans[prevSN].Next = s;
-        this.Scans[s].Previous = prevSN;
+        this.scans[prevSN].next = s;
+        this.scans[s].previous = prevSN;
        }
        prevSN = s;
       },this);
-      MSLIB.Common.finished.call(this);
-     }).bind(this),this.Internal.Offsets.ScanHeaderList,ScanHeaderList);
-    }).call(this.Parent);
+      MSLIB.Common.finish(this);
+     }).bind(this),this.internal.offsets.scanHeaderList,scanHeaderList);
+    }).call(this.parent);
    },
-   this.Internal.Offsets.ScanHeaderList,
-   this.Internal.MSRunHeader.ScanParamsAddr - this.Internal.Offsets.ScanHeaderList
+   this.internal.offsets.scanHeaderList,
+   this.internal.msRunHeader.scanParamsAddr - this.internal.offsets.scanHeaderList
   );
  }
 
- ThermoRawFile.prototype.fetchScanHeader = function(scan,prefetchSpectrumData) {
-  if (!this.Ready) throw new Error("ThermoRawFileNotReady");
-  if (!this.Scans.length) throw new Error("ThermoRawFileNoScanOffsets");
-  if (!this.Scans[scan]) throw new Error("ThermoRawFileScanUnknown");
-  this.CurrentScan = this.Scans[scan].Scan.clone();
+ _ThermoRawFile.prototype.fetchscanHeader = function(scan,prefetchSpectrumData) {
+  if (!this.ready) throw new Error("ThermoRawFileNotReady");
+  if (!this.scans.length) throw new Error("ThermoRawFileNoScanoffsets");
+  if (!this.scans[scan]) throw new Error("ThermoRawFileScanunknown");
+  this.currentScan = new MSLIB.Data.Scan(this.scans[scan].scanData);
   if (prefetchSpectrumData) {
-   this.Internal.PrefetchSpectrum = true;
+   this.internal.prefetchSpectrum = true;
    this.fetchSpectrumData();
   }
  }
 
- ThermoRawFile.prototype.fetchAllScanHeaders = function() {
-  if (!this.Ready) throw new Error("ThermoRawFileNotReady");
-  if (!this.Scans.length) this.fetchScanOffsets();
-  //Already done during fetchScanOffsets
+ _ThermoRawFile.prototype.fetchAllscanHeaders = function() {
+  if (!this.ready) throw new Error("ThermoRawFileNotReady");
+  if (!this.scans.length) this.fetchScanoffsets();
+  //Already done during fetchScanoffsets
  }
 
- ThermoRawFile.prototype.fetchSpectrumData = function() {
-  if (this.Internal.PrefetchSpectrum) delete this.Internal.PrefetchSpectrum;
+ _ThermoRawFile.prototype.fetchSpectrumData = function() {
+  if (this.internal.PrefetchSpectrum) delete this.internal.PrefetchSpectrum;
   else {
-   if (!this.Ready) throw new Error("ThermoRawFileNotReady");
-   if (!this.Scans.length) throw new Error("ThermoRawFileNoScanOffsets");
-   if (!this.CurrentScan) throw new Error("ThermoRawFileScanNotLoaded");
-   MSLIB.Common.starting.call(this);
+   if (!this.ready) throw new Error("ThermoRawFileNotReady");
+   if (!this.scans.length) throw new Error("ThermoRawFileNoScanoffsets");
+   if (!this.currentScan) throw new Error("ThermoRawFileScanNotLoaded");
+   MSLIB.Common.start(this);
   }
-  this.LastError = this.Reader.readBinary(function() { // Pre-buffer
+  this.reader.readBinary(function() { // Pre-buffer
     (function() {
-     this.LastError = fetchStruct.call(this,(function(s){
-      this.Internal.ScanDataPacket = s;
+     fetchStruct.call(this,(function(s){
+      this.internal.scanDataPacket = s;
       var mzs = [];
       var ints = [];     
-     	if ((this.Internal.ScanDataPacket.Profile.PeakCount > 0) && this.FetchProfileSpectraWhenAvailable) {
-       var fv = this.Internal.ScanDataPacket.Profile.FirstValue;
-       var step = this.Internal.ScanDataPacket.Profile.Step; 
+     	if ((this.internal.scanDataPacket.profile.peakCount > 0) && this.fetchProfileSpectraWhenAvailable) {
+       var fv = this.internal.scanDataPacket.profile.FirstValue;
+       var step = this.internal.scanDataPacket.profile.Step; 
      		//convert Hz values into m/z and save the profile peaks
-     		this.Internal.ScanDataPacket.Profile.Chunks.forEach(function(chunk,i) {
-     			this.Internal.ScanDataPacket.Profile.Chunks[i].Signal.forEach(function(signal,j) {
-     				mzs.push(ConvertHz(this.CurrentScan.Internal.HzConversionParams,(fv+(chunk.FirstBin+j)*step)) + chunk.Fudge);
+     		this.internal.scanDataPacket.profile.chunks.forEach(function(chunk,i) {
+     			this.internal.scanDataPacket.profile.chunks[i].signal.forEach(function(signal,j) {
+     				mzs.push(convertHz(this.currentScan.internal.hzConversionParams,(fv+(chunk.firstBin+j)*step)) + chunk.fudge);
      				ints.push(signal);
      			},this);
      		},this);
@@ -173,21 +174,21 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
       else {
      		//Save the Centroided Peaks, they also occur in profile scans but
      		//overlap with profiles, Thermo always does centroiding just for fun
-       this.CurrentScan.Centroided = 1;
-       mzs = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map((peak) => peak.Mz);
-       ints = this.Internal.ScanDataPacket.Profile.PeakList.Peaks.map((peak) => peak.Abundance);
+       this.currentScan.centroided = true;
+       mzs = this.internal.scanDataPacket.profile.peakList.peaks.map((peak) => peak.mz);
+       ints = this.internal.scanDataPacket.profile.peakList.peaks.map((peak) => peak.abundance);
       }
-      this.CurrentScan.Spectrum = new MSLIB.Data.Spectrum(mzs,ints);
-      MSLIB.Common.finished.call(this);
-     }).bind(this),this.Scans[this.CurrentScan.ScanNumber].Offset,ScanDataPacket);
-    }).call(this.Parent);
+      this.currentScan.spectrum = new MSLIB.Data.Spectrum(mzs,ints);
+      MSLIB.Common.finish(this);
+     }).bind(this),this.scans[this.currentScan.scanNumber].offset,scanDataPacket);
+    }).call(this.parent);
    },
-   this.Scans[this.CurrentScan.ScanNumber].Offset,
-   this.Scans[this.CurrentScan.ScanNumber].Length 
+   this.scans[this.currentScan.scanNumber].offset,
+   this.scans[this.currentScan.scanNumber].length 
   );
  }
 
- var ConvertHz = function(p,v) {
+ var convertHz = function(p,v) {
 	 switch (p[0]) {
 	  case 4 : return p[1] + p[2]/v + p[3]/v/v;
 	  case 5 :
@@ -202,392 +203,392 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
 
  //Values starting $ are parsed as utf16 text
 
- //pseudo-ctypes
- var   uint8 = function() { return { CType :   "uint8", ByteLength : 1, read : DataView.prototype.getUint8   } };
- var  uint16 = function() { return { CType :  "uint16", ByteLength : 2, read : DataView.prototype.getUint16  } };
- var  uint32 = function() { return { CType :  "uint32", ByteLength : 4, read : DataView.prototype.getUint32  } };
- var  uint64 = function() { return { CType :  "uint64", ByteLength : 8, read : DataView.prototype.getUint32  } };// Javascript doesn't support 64 bit integers, however the number is stored in little-endian format and for the (relevant) use-cases is exceedingly unlikely to be larger than 2^53 so can be read as uint32 
- var float32 = function() { return { CType : "float32", ByteLength : 4, read : DataView.prototype.getFloat32 } };
- var float64 = function() { return { CType : "float64", ByteLength : 8, read : DataView.prototype.getFloat64 } };
+ //pseudo-cTypes
+ var uint8   = function() { return { cType :   "uint8", byteLength : 1, read : DataView.prototype.getUint8   } };
+ var uint16  = function() { return { cType :  "uint16", byteLength : 2, read : DataView.prototype.getUint16  } };
+ var uint32  = function() { return { cType :  "uint32", byteLength : 4, read : DataView.prototype.getUint32  } };
+ var uint64  = function() { return { cType :  "uint64", byteLength : 8, read : DataView.prototype.getUint32  } };// Javascript doesn't support 64 bit integers, however the number is stored in little-endian format and for the (relevant) use-cases is exceedingly unlikely to be larger than 2^53 so can be read as uint32 
+ var float32 = function() { return { cType : "float32", byteLength : 4, read : DataView.prototype.getFloat32 } };
+ var float64 = function() { return { cType : "float64", byteLength : 8, read : DataView.prototype.getFloat64 } };
 
  //pseudo-pascalstring
- var PString = function() {
-  var _PString = function() { return [
-   ["Length",          uint32,   1,   1e5], //4 bytes
-   ["$Text",           uint16,   function(parentStruct) {return parentStruct.Length}]]; //Length * 2 bytes
+ var pString = function() {
+  var _pString = function() { return [
+   ["length",          uint32,   1,   1e5], //4 bytes
+   ["$text",           uint16,   ps => ps.Length]]; //Length * 2 bytes
   }
-  return _PString;
+  return _pString;
  }();
 
  //pseudo-structs
- var Header = function() {
-  var _Header = function() { if (this.Report) console.log("__Header__"); var hdr = [
-   ["Magic",          uint16,   1], //   2 bytes - Start of fixed size file start block at byte offset 0
-   ["$Signature",     uint16,   9], //  18 bytes
+ var header = function() {
+  var _header = function() { if (this.report) console.log("__Header__"); var hdr = [
+   ["magic",          uint16,   1], //   2 bytes - Start of fixed size file start block at byte offset 0
+   ["$signature",     uint16,   9], //  18 bytes
    ["u1",              uint8,   4], //   4 bytes
    ["u2",              uint8,   4], //   4 bytes 
    ["u3",              uint8,   4], //   4 bytes 
    ["u4",              uint8,   4], //   4 bytes 
-   ["Version",        uint32,   1], //   4 bytes
-   ["AuditStart",   AuditTag,   1], //   8 bytes
-   ["AuditEnd",     AuditTag,   1], //   8 bytes
+   ["version",        uint32,   1], //   4 bytes
+   ["auditStart",   Audittag,   1], //   8 bytes
+   ["auditEnd",     Audittag,   1], //   8 bytes
    ["u5",              uint8,   4], //   4 bytes
    ["u6",              uint8,  60], //  60 bytes
-   ["$Tag",           uint16, 514]];//1028 bytes
+   ["$tag",           uint16, 514]];//1028 bytes
    return hdr;
   }
-  var AuditTag = function() { var adt = [
-   ["AuditTime",      uint64,   1], //   8 bytes
-   ["$AuditTag1",     uint16,  25], //  50 bytes
-   ["$AuditTag2",     uint16,  25], //  50 bytes
+  var audittag = function() { var adt = [
+   ["auditTime",      uint64,   1], //   8 bytes
+   ["$audittag1",     uint16,  25], //  50 bytes
+   ["$audittag2",     uint16,  25], //  50 bytes
    ["u1",              uint8,   4]];//   4 bytes
    return adt;
   }
-  return _Header;
+  return _header;
  }();
 
- var SequencerRow = function() {
-  var _SequencerRow = function() { if(this.Report) console.log("__SequencerRow__"); var sr = [
-   ["Inj_u1",         uint32,   1], //   4 bytes
-   ["Inj_RowNumber",  uint32,   1], //   4 bytes
-   ["Inj_u2",         uint32,   1], //   4 bytes
-   ["Inj_Vial",       uint16,   6], //  12 bytes
-   ["Inj_Volume",    float64,   1], //   8 bytes
-   ["Inj_SampWeight",float64,   1], //   8 bytes
-   ["Inj_SampVolume",float64,   1], //   8 bytes
-   ["Inj_IntStdAmt", float64,   1], //   8 bytes
-   ["Inj_DilFactor", float64,   1], //   8 bytes - End of fixed size file start block at byte offset 1420
-  	["u1",            PString,   1],
-  	["u2",            PString,   1],
-  	["ID",            PString,   1],
-  	["Comment",       PString,   1],
-  	["Userlabel1",    PString,   1],
-  	["Userlabel2",    PString,   1],
-  	["Userlabel3",    PString,   1],
-  	["Userlabel4",    PString,   1],
-  	["Userlabel5",    PString,   1],
-  	["InstMethod",    PString,   1],
-  	["ProcMethod",    PString,   1],
-  	["Filename",      PString,   1],
-  	["Path",          PString,   1]];
-   if (this.Internal.Header.Version >= 57) { sr = sr.concat([
-   	["Vial",          PString,   1],
-   	["u3",            PString,   1],
-   	["u4",            PString,   1],
+ var sequencerRow = function() {
+  var _sequencerRow = function() { if(this.report) console.log("__sequencerRow__"); var sr = [
+   ["inj_u1",         uint32,   1], //   4 bytes
+   ["inj_rowNumber",  uint32,   1], //   4 bytes
+   ["inj_u2",         uint32,   1], //   4 bytes
+   ["inj_vial",       uint16,   6], //  12 bytes
+   ["inj_volume",    float64,   1], //   8 bytes
+   ["inj_sampWeight",float64,   1], //   8 bytes
+   ["inj_sampVolume",float64,   1], //   8 bytes
+   ["inj_intStdAmt", float64,   1], //   8 bytes
+   ["inj_dilFactor", float64,   1], //   8 bytes - End of fixed size file start block at byte offset 1420
+  	["u1",            pString,   1],
+  	["u2",            pString,   1],
+  	["id",            pString,   1],
+  	["comment",       pString,   1],
+  	["userLabel1",    pString,   1],
+  	["userLabel2",    pString,   1],
+  	["userLabel3",    pString,   1],
+  	["userLabel4",    pString,   1],
+  	["userLabel5",    pString,   1],
+  	["instMethod",    pString,   1],
+  	["procMethod",    pString,   1],
+  	["filename",      pString,   1],
+  	["path",          pString,   1]];
+   if (this.internal.header.version >= 57) { sr = sr.concat([
+   	["vial",          pString,   1],
+   	["u3",            pString,   1],
+   	["u4",            pString,   1],
    	["u5",             uint32,   1]]);
    }
-   if (this.Internal.Header.Version >= 60) { sr = sr.concat([
-   	["u6-20",         PString,  15]]);
+   if (this.internal.header.version >= 60) { sr = sr.concat([
+   	["u6-20",         pString,  15]]);
    }
    return sr;
   }
-  return _SequencerRow;
+  return _sequencerRow;
  }();
 
- var AutoSamplerInfo = function() {
-  var _AutoSamplerInfo = function() { if (this.Report) console.log("__AutoSamplerInfo__"); var asi = [
+ var autoSamplerInfo = function() {
+  var _autoSamplerInfo = function() { if (this.report) console.log("__autoSamplerInfo__"); var asi = [
    ["u1",              uint32,  1],
    ["u2",              uint32,  1],
-   ["NumberOfWells",   uint32,  1],
+   ["numberOfWells",   uint32,  1],
    ["u3",              uint32,  1],
    ["u4",              uint32,  1],
    ["u5",              uint32,  1],
-   ["ASText",         PString,  1]];
+   ["asText",         pString,  1]];
    return asi;
   }
-  return _AutoSamplerInfo;
+  return _autoSamplerInfo;
  }();
 
- var RawFileInfo = function() {
-  var _RawFileInfo = function() { if (this.Report) console.log("__RawFileInfo__"); var rf = [
-  	["MethFilePres",   uint32,   1],
-  	["Year",           uint16,   1],
-  	["Month",          uint16,   1],
-  	["Weekday",        uint16,   1],
-  	["Day",            uint16,   1],
-  	["Hour",           uint16,   1],
-  	["Minute",         uint16,   1],
-  	["Second",         uint16,   1],
-  	["Millisecond",    uint16,   1]];
-   if (this.Internal.Header.Version >= 57) { rf = rf.concat([ 
+ var rawFileInfo = function() {
+  var _rawFileInfo = function() { if (this.report) console.log("__rawFileInfo__"); var rf = [
+  	["methFilePres",   uint32,   1],
+  	["year",           uint16,   1],
+  	["month",          uint16,   1],
+  	["weekday",        uint16,   1],
+  	["day",            uint16,   1],
+  	["hour",           uint16,   1],
+  	["minute",         uint16,   1],
+  	["second",         uint16,   1],
+  	["millisecond",    uint16,   1]];
+   if (this.internal.header.version >= 57) { rf = rf.concat([ 
    	["u1",             uint32,   1],
-   	["DataAddr32",     uint32,   1],
-   	["NControllers",   uint32,   1,   100],
-   	["NControllers2",  uint32,   1],
+   	["dataAddr32",     uint32,   1],
+   	["nControllers",   uint32,   1,   100],
+   	["nControllers2",  uint32,   1],
    	["u2",             uint32,   1],
    	["u3",             uint32,   1]]);
-    if (this.Internal.Header.Version < 64) { rf = rf.concat([ 
-    	["RunHeaderAddr",RunHeaderAddr32, function(parentStruct) {return parentStruct.NControllers}],
-    	["Padding1",       uint8,    function(parentStruct) {return (this.Internal.Header.Version == 57 ? 756-12*parentStruct.NControllers : 760-12*parentStruct.NControllers)}]]);
+    if (this.internal.header.version < 64) { rf = rf.concat([ 
+    	["runHeaderAddr",runHeaderAddr32, ps => ps.nControllers],
+    	["padding1",       uint8,    ps => (this.internal.header.version == 57 ? 756-12*ps.nControllers : 760-12*ps.nControllers)]]);
     }
     else { rf = rf.concat([
-     ["Padding1",       uint8,  764]]); 
+     ["padding1",       uint8,  764]]); 
     }
    }
-   if (this.Internal.Header.Version >=64) { rf = rf.concat([   
-   	["DataAddr",        uint64,   1],
-   	["Unknown6",        uint64,   1],
-   	["RunHeaderAddr",RunHeaderAddr64, function(parentStruct) {return parentStruct.NControllers}],
-   	["Padding2",         uint8,   function(parentStruct) {return (this.Internal.Header.Version < 66 ? 1016-16*parentStruct.NControllers : 1032-16*parentStruct.NControllers)}]]);
+   if (this.internal.header.version >=64) { rf = rf.concat([   
+   	["dataAddr",        uint64,   1],
+   	["unknown6",        uint64,   1],
+   	["runHeaderAddr",runHeaderAddr64, (ps => (ps.nControllers))],
+   	["padding2",         uint8,   ps => (this.internal.header.version < 66 ? 1016-16*ps.nControllers : 1032-16*ps.nControllers)]]);
    }
    rf = rf.concat([
- 	 ["Headings",       PString,  5],
- 		["u4",             PString,  1]]);
+ 	 ["headings",       pString,  5],
+ 		["u4",             pString,  1]]);
    return rf;
   }
-  var RunHeaderAddr32 = function() { var rha32 = [
-  	["Offset32",        uint32,   1],
+  var runHeaderAddr32 = function() { var rha32 = [
+  	["offset32",        uint32,   1],
   	["u4",              uint32,   1],
   	["u5",              uint32,   1]];
    return rha32;
   }
-  var RunHeaderAddr64 = function() { var rha = [
-  	["Offset",          uint64,   1],
+  var runHeaderAddr64 = function() { var rha = [
+  	["offset",          uint64,   1],
   	["u7",              uint64,   1]];
    return rha;
   }
-  return _RawFileInfo;
+  return _rawFileInfo;
  }();
 
- var RunHeader = function() {
-  var _RunHeader = function () { if (this.Report) console.log("__RunHeader["+(this.Internal.RunHeaders.length)+"]__"); var rh = [
-  	["SI_u1",           uint32,   1],
-  	["SI_u2",           uint32,   1],
-  	["FirstScanNumber", uint32,   1],
-  	["LastScanNumber",  uint32,   1],
-  	["InstLogLength",   uint32,   1],
-  	["SI_u3",           uint32,   1],
-  	["SI_u4",           uint32,   1]];
-   if (this.Internal.Header.Version < 64) { rh = rh.concat([
-  	 ["ScanHeaderAddr",  uint32,   1],
-   	["DataAddr",        uint32,   1],
-   	["InstLogAddr",     uint32,   1],
-   	["ErrorLogAddr",    uint32,   1]]);
+ var runHeader = function() {
+  var _runHeader = function () { if (this.report) console.log("__runHeader["+(this.internal.runHeaders.length)+"]__"); var rh = [
+  	["si_u1",           uint32,   1],
+  	["si_u2",           uint32,   1],
+  	["firstScanNumber", uint32,   1],
+  	["lastScanNumber",  uint32,   1],
+  	["instLogLength",   uint32,   1],
+  	["si_u3",           uint32,   1],
+  	["si_u4",           uint32,   1]];
+   if (this.internal.header.version < 64) { rh = rh.concat([
+  	 ["scanHeaderAddr",  uint32,   1],
+   	["dataAddr",        uint32,   1],
+   	["instLogAddr",     uint32,   1],
+   	["errorLogAddr",    uint32,   1]]);
     }
     else { rh = rh.concat([
-   	["ScanHeaderAddr32",uint32,   1],
-   	["DataAddr32",      uint32,   1],
-    ["InstLogAddr32",   uint32,   1],
-  	 ["ErrorLogAddr32",  uint32,   1]]);
+   	["scanHeaderAddr32",uint32,   1],
+   	["dataAddr32",      uint32,   1],
+    ["instLogAddr32",   uint32,   1],
+  	 ["errorLogAddr32",  uint32,   1]]);
    }
    rh = rh.concat([
-  	["SI_u5",           uint32,   1],
-  	["MaxSignal",      float64,   1],
-  	["LowMz",          float64,   1],
-  	["HighMz",         float64,   1],
-  	["StartTime",      float64,   1],
-  	["EndTime",        float64,   1],
-  	["SI_u6",            uint8,  56],
-  	["$Tag1",           uint16,  44],
-  	["$Tag2",           uint16,  20],
-  	["$Tag3",           uint16, 160],
-  	["$Filename1",      uint16, 260],
-  	["$FileName2",      uint16, 260],
-  	["$FileName3",      uint16, 260],
-  	["$FileName4",      uint16, 260],
-  	["$FileName5",      uint16, 260],
-  	["$FileName6",      uint16, 260],
+  	["si_u5",           uint32,   1],
+  	["maxSignal",      float64,   1],
+  	["lowMz",          float64,   1],
+  	["highMz",         float64,   1],
+  	["startTime",      float64,   1],
+  	["endTime",        float64,   1],
+  	["si_u6",            uint8,  56],
+  	["$tag1",           uint16,  44],
+  	["$tag2",           uint16,  20],
+  	["$tag3",           uint16, 160],
+  	["$fileName1",      uint16, 260],
+  	["$fileName2",      uint16, 260],
+  	["$fileName3",      uint16, 260],
+  	["$fileName4",      uint16, 260],
+  	["$fileName5",      uint16, 260],
+  	["$fileName6",      uint16, 260],
   	["u1",             float64,   1],
   	["u2",             float64,   1],
-  	["$FileName7",      uint16, 260],
-  	["$FileName8",      uint16, 260],
-  	["$FileName9",      uint16, 260],
-  	["$FileName10",     uint16, 260],
-  	["$FileName11",     uint16, 260],
-  	["$FileName12",     uint16, 260],
-  	["$FileName13",     uint16, 260]]);
-   if (this.Internal.Header.Version < 64) { rh = rh.concat([
-  	 ["ScanTrailerAddr", uint32,   1],
-  	 ["ScanParamsAddr",  uint32,   1]]);
+  	["$fileName7",      uint16, 260],
+  	["$fileName8",      uint16, 260],
+  	["$fileName9",      uint16, 260],
+  	["$fileName10",     uint16, 260],
+  	["$fileName11",     uint16, 260],
+  	["$fileName12",     uint16, 260],
+  	["$fileName13",     uint16, 260]]);
+   if (this.internal.header.version < 64) { rh = rh.concat([
+  	 ["scanTrailerAddr", uint32,   1],
+  	 ["scanParamsAddr",  uint32,   1]]);
    }
    else { rh = rh.concat([
-  	 ["ScanTrailerAddr32",uint32,  1],
-  	 ["ScanParamsAddr32",uint32,   1]]);
+  	 ["scanTrailerAddr32",uint32,  1],
+  	 ["scanParamsAddr32",uint32,   1]]);
    }
    rh = rh.concat([
   	["u3",             uint32,   1],
   	["u4",             uint32,   1],
-  	["NSegs",          uint32,   1],
+  	["nSegs",          uint32,   1],
   	["u5",             uint32,   1],
   	["u6",             uint32,   1],
-  	["OwnAddr32",      uint32,   1],
+  	["ownAddr32",      uint32,   1],
   	["u7",             uint32,   1],
   	["u8",             uint32,   1]]);
-   if (this.Internal.Header.Version >= 64) { rh = rh.concat([
-   	["ScanHeaderAddr", uint64,   1],
-   	["DataAddr",       uint64,   1],
-   	["InstLogAddr",    uint64,   1],
-   	["ErrorLogAddr",   uint64,   1],
-   	["Unknown9",       uint64,   1],
-   	["ScanTrailerAddr",uint64,   1],
-   	["ScanParamsAddr", uint64,   1],
+   if (this.internal.header.version >= 64) { rh = rh.concat([
+   	["scanHeaderAddr", uint64,   1],
+   	["dataAddr",       uint64,   1],
+   	["instLogAddr",    uint64,   1],
+   	["errorLogAddr",   uint64,   1],
+   	["unknown9",       uint64,   1],
+   	["scanTrailerAddr",uint64,   1],
+   	["scanParamsAddr", uint64,   1],
    	["u10",            uint32,   1],
    	["u11",            uint32,   1],
-   	["OwnAddr",        uint64,   1],
+   	["ownAddr",        uint64,   1],
    	["u12-35",         uint32,  24]]);
    }
    rh = rh.concat([
   	["u36",             uint8,   8],
   	["u37",            uint32,   1],
-  	["Device",        PString,   1],
-  	["Model",         PString,   1],
-  	["SN",            PString,   1],
-  	["SWVer",         PString,   1],
-  	["Tag1",          PString,   1],
-  	["Tag2",          PString,   1],
-  	["Tag3",          PString,   1],
-  	["Tag4",          PString,   1]]);
+  	["device",        pString,   1],
+  	["model",         pString,   1],
+  	["sn",            pString,   1],
+  	["swVer",         pString,   1],
+  	["tag1",          pString,   1],
+  	["tag2",          pString,   1],
+  	["tag3",          pString,   1],
+  	["tag4",          pString,   1]]);
    return rh;
   }
-  return _RunHeader;
+  return _runHeader;
  }();
 
- var ScanHeaderList = function() {
-  var _ScanHeaderList = function () { if (this.Report) console.log("__ScanHeaderList__(silent)"); var shl = [
-   ["ScanHeaders",ScanHeader,   function() {return this.Internal.NScans}],
-  	["?NScans",        uint32,   1],
-  	["ScanEvents",  ScanEvent,   function() {return this.Internal.NScans}]];
+ var scanHeaderList = function() {
+  var _scanHeaderList = function () { if (this.report) console.log("__scanHeaderList__(silent)"); var shl = [
+   ["scanHeaders",scanHeader,   function () {return this.internal.nScans}],
+  	["?nScans",        uint32,   1],
+  	["scanEvents",  ScanEvent,   function () {return this.internal.nScans}]];
    return shl;
   }
-  var ScanHeader = function() {
+  var scanHeader = function() {
    var sh = [];
-   if (this.Internal.Construction.PartialStruct[0].ScanHeaders && this.Internal.Construction.PartialStruct[0].ScanHeaders.length) {
-    MSLIB.Common.progress.call(this,(this.Internal.Construction.PartialStruct[0].ScanHeaders.length/this.Internal.NScans)*50);
-    if (this.Report && !(this.Internal.Construction.PartialStruct[0].ScanHeaders.length % 2000)) console.log("Reading ScanHeaderList: "+this.Progress.toFixed(0)+"%");
+   if (this.internal.construction.partialStruct[0].scanHeaders && this.internal.construction.partialStruct[0].scanHeaders.length) {
+    MSLIB.Common.progress(this,(this.internal.construction.partialStruct[0].scanHeaders.length/this.internal.nScans)*50);
+    if (this.report && !(this.internal.construction.partialStruct[0].scanHeaders.length % 2000)) console.log("Reading scanHeaderList: "+this.progress.toFixed(0)+"%");
    }
-   if (this.Internal.Header.Version < 64) { sh = sh.concat([ 
-  	 ["Offset",        uint32,   1]]);
+   if (this.internal.header.version < 64) { sh = sh.concat([ 
+  	 ["offset",        uint32,   1]]);
    }
    else { sh = sh.concat([ 
-	   ["Offset32",      uint32,   1]]);
+	   ["offset32",      uint32,   1]]);
    }
    sh = sh.concat([
-  	["Index",          uint32,   1],
-  	["ScanEvent",      uint16,   1],
-  	["ScanSegment",    uint16,   1],
-  	["Next",           uint32,   1],
+  	["index",          uint32,   1],
+  	["scanEvent",      uint16,   1],
+  	["scanSegment",    uint16,   1],
+  	["next",           uint32,   1],
   	["u1",             uint32,   1],
-  	["DataPacketSize", uint32,   1],
-  	["Time",          float64,   1],
-  	["TotalCurrent",  float64,   1],
-  	["BaseIntensity", float64,   1],
-  	["BaseMz",        float64,   1],
-  	["LowMz",         float64,   1],
-  	["HighMz",        float64,   1]]);
-   if (this.Internal.Header.Version >= 64) { sh = sh.concat([ 
-  	 ["Offset",         uint64,   1]]);
+  	["dataPacketSize", uint32,   1],
+  	["time",          float64,   1],
+  	["totalCurrent",  float64,   1],
+  	["baseIntensity", float64,   1],
+  	["baseMz",        float64,   1],
+  	["lowMz",         float64,   1],
+  	["highMz",        float64,   1]]);
+   if (this.internal.header.version >= 64) { sh = sh.concat([ 
+  	 ["offset",         uint64,   1]]);
    }
-   if (this.Internal.Header.Version >= 66) { sh = sh.concat([ 
+   if (this.internal.header.version >= 66) { sh = sh.concat([ 
   	 ["u2",             uint32,   1],
     ["u3",             uint32,   1]]);
    }
    return sh;
   }
-  var ScanEvent = function() { var sev;
+  var scanEvent = function() { var sev;
   	//Preamble[6] == ms-level
   	//Preamble[40] == analyzer
-   if (this.Internal.Construction.PartialStruct[0].ScanEvents && this.Internal.Construction.PartialStruct[0].ScanEvents.length) {
-    MSLIB.Common.progress.call(this,(this.Internal.Construction.PartialStruct[0].ScanEvents.length/this.Internal.NScans)*50 + 50);
-    if (this.Report && !(this.Internal.Construction.PartialStruct[0].ScanEvents.length % 2000)) console.log("Reading ScanHeaderList: "+this.Progress.toFixed(0)+"%");
+   if (this.internal.construction.partialStruct[0].scanEvents && this.internal.construction.partialStruct[0].scanEvents.length) {
+    MSLIB.Common.progress(this,(this.internal.construction.partialStruct[0].scanEvents.length/this.internal.nScans)*50 + 50);
+    if (this.report && !(this.internal.construction.partialStruct[0].scanEvents.length % 2000)) console.log("Reading scanHeaderList: "+this.progress.toFixed(0)+"%");
    }
-   if (this.Internal.Header.Version < 66) { sev = [  //Fix this?
-    ["SEPreamble",      uint8,   function() {
-                                        if      (this.Internal.Header.Version < 57) return  41;
-                                        else if (this.Internal.Header.Version < 62) return  80;
-                                        else if (this.Internal.Header.Version < 63) return 120;
-                                        else return 128;
+   if (this.internal.header.version < 66) { sev = [  //Fix this?
+    ["sePreamble",      uint8,   function() {
+                                  if      (this.internal.header.version < 57) return  41;
+                                  else if (this.internal.header.version < 62) return  80;
+                                  else if (this.internal.header.version < 63) return 120;
+                                  else return 128;
                                  }],
-    ["NPrecursors",    uint32,   1,   100],
-  	 ["Reaction",     Reaction,   function(parentStruct) {return parentStruct.NPrecursors}],
+    ["nPrecursors",    uint32,   1,   100],
+  	 ["reaction",     reaction,   ps => ps.nPrecursors],
    	["u1",             uint32,   1],
-   	["MzRange",FractionCollector,1],
-   	["NParam",         uint32,   1],
-   	["u2",            float64,   function(parentStruct) {return (parentStruct.NParam == 7 ? 2 : 1)}],
-   	["A",             float64,   1],
-   	["B",             float64,   1],
-   	["C",             float64,   1],
-   	["u2",            float64,   function(parentStruct) {return (parentStruct.NParam == 7 ? 2 : 0)}],
+   	["mzRange",fractionCollector,1],
+   	["nParam",         uint32,   1],
+   	["u2",            float64,   ps => (ps.nParam == 7 ? 2 : 1)],
+   	["a",             float64,   1],
+   	["b",             float64,   1],
+   	["c",             float64,   1],
+   	["u2",            float64,   ps => (ps.nParam == 7 ? 2 : 0)],
    	["u1",             uint32,   2]];
    }
    else { sev = [  //v66
-    ["Preamble",        uint8, 132],
+    ["preamble",        uint8, 132],
    	["u1",             uint32,   1],
-    ["NPrecursors",    uint32,   1],
-  	 ["Reaction",     Reaction,   function(parentStruct) {return (parentStruct.SEPreamble[10] == 1 ? parentStruct.NPrecursors : 0)}],
-    ["u2",            float64,   function(parentStruct) {return (parentStruct.SEPreamble[10] == 1 ? 2 : 0)}],
-    ["MzRange",FractionCollector,function(parentStruct) {return (parentStruct.SEPreamble[10] != 1 ? 1 : 0)}],
-    ["u1",             uint32,   function(parentStruct) {return (parentStruct.SEPreamble[10] != 1 ? 4 : 0)}],
-    ["MzRange",FractionCollector,function(parentStruct) {return (parentStruct.SEPreamble[10] != 1 ? 1 : 0)}],
+    ["nPrecursors",    uint32,   1],
+  	 ["reaction",     reaction,   ps => (ps.sePreamble[10] == 1 ? ps.nPrecursors : 0)],
+    ["u2",            float64,   ps => (ps.sePreamble[10] == 1 ? 2 : 0)],
+    ["mzRange",fractionCollector,ps => (ps.sePreamble[10] != 1 ? 1 : 0)],
+    ["u1",             uint32,   ps => (ps.sePreamble[10] != 1 ? 4 : 0)],
+    ["mzRange",fractionCollector,ps => (ps.sePreamble[10] != 1 ? 1 : 0)],
     ["u1",             uint32,   3],
-    ["MzRange",FractionCollector,1],
-   	["NParam",         uint32,   1],
+    ["mzRange",fractionCollector,1],
+   	["nParam",         uint32,   1],
     ["u3",            float64,   2],
-   	["A",             float64,   1],
-   	["B",             float64,   1],
-   	["C",             float64,   1],
+   	["a",             float64,   1],
+   	["b",             float64,   1],
+   	["c",             float64,   1],
     ["u4",             uint32,   5]];
    }
    return sev;
   }
-  var	Reaction = function() { return [
-   ["PrecursorMz",   float64,   1],
+  var	reaction = function() { return [
+   ["precursorMz",   float64,   1],
   	["u1",            float64,   1],
-  	["Energy",        float64,   1],
+  	["energy",        float64,   1],
   	["u2",             uint32,   1],
   	["u3",             uint32,   1]];
   }
-  var FractionCollector = function() { return [
-	  ["LowMz",         float64,   1],
-	  ["HighMz",        float64,   1]];
+  var fractionCollector = function() { return [
+	  ["lowMz",         float64,   1],
+	  ["highMz",        float64,   1]];
   }
-  return _ScanHeaderList;
+  return _scanHeaderList;
  }();
 
- var ScanDataPacket = function() {
-  var _ScanDataPacket = function() { if (this.Report) console.log("__ScanDataPacket__"); return [
+ var scanDataPacket = function() {
+  var _scanDataPacket = function() { if (this.report) console.log("__scanDataPacket__"); return [
   	["u1",             uint32,   1],
-  	["ProfileSize",    uint32,   1],
-  	["PeakListSize",   uint32,   1],
-  	["Layout",         uint32,   1],
-  	["DescriptorListSize",uint32,1],
+  	["profileSize",    uint32,   1],
+  	["peakListSize",   uint32,   1],
+  	["layout",         uint32,   1],
+  	["descriptorListSize",uint32,1],
   	["unkStreamSize",  uint32,   1],
-  	["TripletStreamSize",uint32, 1],
+  	["tripletStreamSize",uint32, 1],
   	["u2",             uint32,   1],
-  	["LowMz",         float32,   1],
-  	["HighMz",        float32,   1],
-  	["Profile",       Profile,   function(parentStruct) {return (parentStruct.ProfileSize > 0)}],
-  	["PeakList",     PeakList,   function(parentStruct) {return (parentStruct.PeakListSize > 0)}],
-  	["DescriptorList",Descriptor,function(parentStruct) {return parentStruct.DescriptorListSize}],
-  	["unk",           float32,   function(parentStruct) {return parentStruct.unkStreamSize}],
-  	["Triplets",      float32,   function(parentStruct) {return parentStruct.TripletStreamSize}]];
+  	["lowMz",         float32,   1],
+  	["highMz",        float32,   1],
+  	["profile",       profile,   ps => (ps.profileSize > 0)],
+  	["peakList",     peakList,   ps => (ps.peakListSize > 0)],
+  	["descriptorList",descriptor,ps => ps.descriptorListSize],
+  	["unk",           float32,   ps => ps.unkStreamSize],
+  	["triplets",      float32,   ps => ps.tripletStreamSize]];
   }
-  var Profile = function() { return [
-  	["FirstValue",    float64,   1],
-  	["Step",          float64,   1],
-  	["PeakCount",      uint32,   1],
-  	["NBins",          uint32,   1],
-  	["Chunks",   ProfileChunk,   function(parentStruct) {return parentStruct.PeakCount}]];
+  var profile = function() { return [
+  	["firstValue",    float64,   1],
+  	["step",          float64,   1],
+  	["peakCount",      uint32,   1],
+  	["nBins",          uint32,   1],
+  	["chunks",   profileChunk,   ps => ps.peakCount]];
   }
-  var ProfileChunk = function() { return [
-  	["FirstBin",       uint32,   1],
-  	["NBins",          uint32,   1],
-  	["Fudge",         float32,   function() {return (this.Internal.Construction.PartialStruct[2].Layout > 0)}],
-  	["Signal",        float32,   function(parentStruct) {return parentStruct.NBins}]];
+  var profileChunk = function() { return [
+  	["firstBin",       uint32,   1],
+  	["nBins",          uint32,   1],
+  	["fudge",         float32,   function() {return (this.internal.construction.partialStruct[2].layout > 0)}],
+  	["signal",        float32,   ps => ps.nBins]];
   }
-  var PeakList = function () { return [
-   ["Count",          uint32,   1],
-   ["Peaks",  CentroidedPeak,   function(parentStruct) {return parentStruct.Count}]];
+  var peakList = function () { return [
+   ["count",          uint32,   1],
+   ["peaks",  centroidedPeak,   ps => ps.count]];
   }
-  var CentroidedPeak = function () { return [
-  	["Mz",            float32,   1],
-  	["Abundance",     float32,   1]];
+  var centroidedPeak = function () { return [
+  	["mz",            float32,   1],
+  	["abundance",     float32,   1]];
   }
-  var Descriptor = function() { return [
-  	["Index",          uint16,   1],
-  	["Flags",           uint8,   1],
-  	["Charge",          uint8,   1]];
+  var descriptor = function() { return [
+  	["index",          uint16,   1],
+  	["flags",           uint8,   1],
+  	["charge",          uint8,   1]];
   }
-  return _ScanDataPacket;
+  return _scanDataPacket;
  }();
 
  //pseudo-struct fetch
@@ -596,74 +597,74 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
 
  var fetchStruct = function(callback,pos,structfn) {
   if (!structfn) throw new Error("ThermoRawFileUnknownStruct");
-  MSLIB.Common.starting.call(this);
-  if (pos != null) this.Reader.Position = pos;
-  this.Internal.Construction = {};
-  this.Internal.Construction.Callback = callback;
-  this.Internal.Construction.Queue = [structfn.call(this)];
-  this.Internal.Construction.PartialStruct = [{}];
-  this.Internal.Construction.CurrentStructDef = [];
-  processConstruction.call(this);
+  MSLIB.Common.start(this);
+  if (pos != null) this.reader.position = pos;
+  this.internal.construction = {};
+  this.internal.construction.callback = callback;
+  this.internal.construction.queue = [structfn.call(this)];
+  this.internal.construction.partialStruct = [{}];
+  this.internal.construction.currentStructDef = [];
+  processconstruction.call(this);
  }
 
- var processConstruction = function() {
-  if (this.Internal.Construction) {
-   if (this.Internal.Construction.Queue.length) {
-    if (this.Internal.Construction.Queue[0].length) {
-     var curr = this.Internal.Construction.Queue[0].shift();
-     var substruct = curr[1].call(this);
-     var repeat = (typeof(curr[2]) === "function" ? curr[2].call(this,this.Internal.Construction.PartialStruct[0]) : curr[2]);
-     if (repeat == 0) processConstruction.call(this);
+ var processconstruction = function() {
+  if (this.internal.construction) {
+   if (this.internal.construction.queue.length) {
+    if (this.internal.construction.queue[0].length) {
+     var currentStruct = this.internal.construction.queue[0].shift();
+     var substruct = currentStruct[1].call(this);
+     var repeat = (typeof(currentStruct[2]) === "function" ? currentStruct[2].call(this,this.internal.construction.partialStruct[0]) : currentStruct[2]);
+     if (repeat == 0) processconstruction.call(this);
      else {
-      this.Internal.Construction.CurrentStructDef.unshift(curr);
-      if (substruct.CType) {
-       if ((repeat * substruct.ByteLength) > (this.Reader.File.size-this.Reader.Position)) {
-        console.log("Error fetching "+this.Internal.Construction.CurrentStructDef[0][0]+" in "+this.Internal.Construction.CurrentStructDef[1][0]+": "+repeat+" * "+substruct.ByteLength+" bytes is more than remaining file length of "+(this.Reader.File.size-this.Reader.Position)+" at position "+this.Reader.Position);
-        console.log(this.Internal.Construction.PartialStruct);
+      this.internal.construction.currentStructDef.unshift(currentStruct);
+      if (substruct.cType) {
+       if ((repeat * substruct.byteLength) > (this.reader.File.size-this.reader.position)) {
+        console.log("Error fetching "+this.internal.construction.currentStructDef[0][0]+" in "+this.internal.construction.currentStructDef[1][0]+": "+repeat+" * "+substruct.byteLength+" bytes is more than remaining file length of "+(this.reader.File.size-this.reader.position)+" at position "+this.reader.position);
+        console.log(this.internal.construction.partialStruct);
        }
        else {
-        if (this.Report && Verbosity) console.log(this.Internal.Construction.CurrentStructDef.map((e) => e[0]).reverse().join(":") + " - " + substruct.ByteLength * repeat + " bytes at offset " + this.Reader.Position);
-        this.LastError = this.Reader.readBinary(
+        if (this.report && verbose) console.log(this.internal.construction.currentStructDef.map((e) => e[0]).reverse().join(":") + " - " + substruct.byteLength * repeat + " bytes at offset " + this.reader.position);
+        this.reader.readBinary(
          parseStructBinary,
-         this.Reader.Position,
-         substruct.ByteLength * repeat
+         this.reader.position,
+         substruct.byteLength * repeat
         );
        }
       }
       else { //Down a recursion level
        if (repeat > 1) { // expand repeated structs into multiple singlets
-        curr[2] = 1;
+        currentStruct[2] = 1;
         for (var i = 0; i < (repeat-1); i++) { //one less than repeat as instigate first read of struct below anyway
-         this.Internal.Construction.Queue[0].unshift(curr)
+         this.internal.construction.queue[0].unshift(currentStruct)
         }
        }
-       this.Internal.Construction.Queue.unshift(substruct);
-       this.Internal.Construction.PartialStruct.unshift({});
-       processConstruction.call(this);
+       this.internal.construction.queue.unshift(substruct);
+       this.internal.construction.partialStruct.unshift({});
+       processconstruction.call(this);
       }    
      }
     }
     else { //Up a recursion level
-     var finishedStructDef = this.Internal.Construction.CurrentStructDef.shift();
-     var finishedStruct = this.Internal.Construction.PartialStruct.shift();
+     var finishedStructDef = this.internal.construction.currentStructDef.shift();
+     var finishedStruct = this.internal.construction.partialStruct.shift();
      if (finishedStructDef) {
-      if (this.Internal.Construction.PartialStruct[0][finishedStructDef[0]]) {
-       if (Array.isArray(this.Internal.Construction.PartialStruct[0][finishedStructDef[0]])) {
-        this.Internal.Construction.PartialStruct[0][finishedStructDef[0]].push(finishedStruct)
+      if (this.internal.construction.partialStruct[0][finishedStructDef[0]]) {
+       if (Array.isArray(this.internal.construction.partialStruct[0][finishedStructDef[0]])) {
+        this.internal.construction.partialStruct[0][finishedStructDef[0]].push(finishedStruct)
        }
        else {
-        this.Internal.Construction.PartialStruct[0][finishedStructDef[0]] = [this.Internal.Construction.PartialStruct[0][finishedStructDef[0]],finishedStruct]
+        this.internal.construction.partialStruct[0][finishedStructDef[0]] = [this.internal.construction.partialStruct[0][finishedStructDef[0]],finishedStruct]
        }
       }
       else {
-       this.Internal.Construction.PartialStruct[0][finishedStructDef[0]] = finishedStruct;
+       this.internal.construction.partialStruct[0][finishedStructDef[0]] = finishedStruct;
       }
-      this.Internal.Construction.Queue.shift()  //Remove empty recursion level
-      processConstruction.call(this);
+      this.internal.construction.queue.shift()  //Remove empty recursion level
+      processconstruction.call(this);
      }
      else { //Done!
-      var callback = this.Internal.Construction.Callback;
-      delete(this.Internal.Construction);
+      var callback = this.internal.construction.callback;
+      delete(this.internal.construction);
       callback(finishedStruct);
      }
     }
@@ -673,47 +674,47 @@ MSLIB.Format.ThermoRawFile = function _SOURCE() {
 
  var parseStructBinary = function() { //Use DataView to force little endian reads
   var dV = new DataView(this.result);
-  var sdef = this.Parent.Internal.Construction.CurrentStructDef.shift();
-  var ctype = sdef[1]();
-  var repeat = (typeof(sdef[2]) === "function" ? sdef[2].call(this.Parent,this.Parent.Internal.Construction.PartialStruct[0]) : sdef[2]);
+  var structDef = this.parent.internal.construction.currentStructDef.shift();
+  var cType = structDef[1]();
+  var repeat = (typeof(structDef[2]) === "function" ? structDef[2].call(this.parent,this.parent.internal.construction.partialStruct[0]) : structDef[2]);
   var values = [];
-  if (sdef[3]) {
+  if (structDef[3]) {
    for (var i=0; i<repeat; i++) {
-    values.push(Math.min(ctype.read.call(dV,i*ctype.ByteLength,true),sdef[3]));
+    values.push(Math.min(cType.read.call(dV,i*cType.byteLength,true),structDef[3]));
    }
   }
   else {
    for (var i=0; i<repeat; i++) {
-    values.push(ctype.read.call(dV,i*ctype.ByteLength,true));
+    values.push(cType.read.call(dV,i*cType.byteLength,true));
    }
   }
-  var finalval = (sdef[0].charAt(0) == "$" ?  DecodeUTF16(values) : (repeat == 1 ? values[0] : values));
-  if (this.Parent.Internal.Construction.PartialStruct[0][sdef[0]]) {
-   if (Array.isArray(this.Parent.Internal.Construction.PartialStruct[0][sdef[0]])) {
-    this.Parent.Internal.Construction.PartialStruct[0][sdef[0]] = this.Parent.Internal.Construction.PartialStruct[0][sdef[0]].concat(finalval);
+  var finalVal = (structDef[0].charAt(0) == "$" ?  decodeUTF16(values) : (repeat == 1 ? values[0] : values));
+  if (this.parent.internal.construction.partialStruct[0][structDef[0]]) {
+   if (Array.isArray(this.parent.internal.construction.partialStruct[0][structDef[0]])) {
+    this.parent.internal.construction.partialStruct[0][structDef[0]] = this.parent.internal.construction.partialStruct[0][structDef[0]].concat(finalVal);
    }
    else {
-    this.Parent.Internal.Construction.PartialStruct[0][sdef[0]] = [this.Parent.Internal.Construction.PartialStruct[0][sdef[0]]].concat(finalval);
+    this.parent.internal.construction.partialStruct[0][structDef[0]] = [this.parent.internal.construction.partialStruct[0][structDef[0]]].concat(finalVal);
    }
   }
   else {
-   this.Parent.Internal.Construction.PartialStruct[0][sdef[0]] = finalval;
+   this.parent.internal.construction.partialStruct[0][structDef[0]] = finalVal;
   }
-  processConstruction.call(this.Parent);
+  processconstruction.call(this.parent);
  }
 
- var DecodeUTF16 = function(arr) {
-  var endindex = arr.indexOf(0);
-  if (endindex < 0) {
+ var decodeUTF16 = function(arr) {
+  var endIndex = arr.indexOf(0);
+  if (endIndex < 0) {
    return String.fromCharCode.apply(null,arr);
   } 
   else {
-   return String.fromCharCode.apply(null,arr.slice(0,endindex));
+   return String.fromCharCode.apply(null,arr.slice(0,endIndex));
   }
  }
 
- ThermoRawFile._SOURCE = _SOURCE;
+ _ThermoRawFile._SOURCE = _SOURCE;
 
- return ThermoRawFile;
+ return _ThermoRawFile;
 
 }();

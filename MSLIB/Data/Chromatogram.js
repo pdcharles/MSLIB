@@ -5,7 +5,7 @@ if (typeof MSLIB.Data == 'undefined') MSLIB.Data = {};
 
 MSLIB.Data.Chromatogram = function _SOURCE() {
 
- var Chromatogram = function(rts,ints,modulus) {
+ var _Chromatogram = function(rts,ints,modulus) {
   if ([rts,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
    console.log("the first two arguments to MSLIB.Chromatogram must be an array");
    return {};
@@ -21,7 +21,7 @@ MSLIB.Data.Chromatogram = function _SOURCE() {
   }
  }
 
- Chromatogram.prototype.getIntegratedArea = function() {
+ _Chromatogram.prototype.getIntegratedArea = function() {
   if (this.rts.length < 2) { return 0 };
   return this.rts.reduce((function(area,rt,i) {
    if (i >= this.rts.length-1) {
@@ -35,7 +35,7 @@ MSLIB.Data.Chromatogram = function _SOURCE() {
   }).bind(this));
  }
 
- Chromatogram.prototype.getMinRT = function() {
+ _Chromatogram.prototype.getMinRT = function() {
   if(!this.rts.length) {
    return 0;
   }
@@ -44,7 +44,7 @@ MSLIB.Data.Chromatogram = function _SOURCE() {
   }
  }
 
- Chromatogram.prototype.getMaxRT = function() {
+ _Chromatogram.prototype.getMaxRT = function() {
   if(!this.rts.length) {
    return 0;
   }
@@ -53,7 +53,7 @@ MSLIB.Data.Chromatogram = function _SOURCE() {
   }
  }
 
- Chromatogram.prototype.getMaxIntensity = function() {
+ _Chromatogram.prototype.getMaxIntensity = function() {
   if(!this.ints.length) {
    return 0;
   }
@@ -62,8 +62,8 @@ MSLIB.Data.Chromatogram = function _SOURCE() {
   }
  }
 
- Chromatogram._SOURCE = _SOURCE;
+ _Chromatogram._SOURCE = _SOURCE;
 
- return Chromatogram;
+ return _Chromatogram;
 
 }();
