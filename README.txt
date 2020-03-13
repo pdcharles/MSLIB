@@ -32,4 +32,4 @@ sqlite (required for reading .msf and .blib files, both of which are SQLite
 https://github.com/kripken/sql.js/
  => sql.js
 
-Dependencies should be loaded in the header of your page along with the required MSLIB modules
+For v1 (now deprecated), dependencies should be loaded in the header of your page along with the required MSLIB modules
