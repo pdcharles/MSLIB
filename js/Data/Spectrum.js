@@ -176,8 +176,8 @@ MSLIB.Data.Spectrum = function _SOURCE() {
   }
  };
  
- var normalisedSpectralContrastAngle = function(dotProduct) {
-  return (1 - Math.acos(dotProduct)*2/Math.PI);
+ var normalisedSpectralContrastAngle = function(dp) {
+  return (1 - Math.acos(dp)*2/Math.PI);
  };
  
  var unitLengthVector = function(arr) {
@@ -253,13 +253,15 @@ MSLIB.Data.Spectrum = function _SOURCE() {
    mzPPMError = 5.0;
   }
   var matchedSpectra = _Spectrum.prototype.getMatchedSpectra.call(this,comparator,mzPPMError);
-  matchedSpectra[0][1] = matchedSpectra[0][1].map((inten,i) => matchedSpectra[1][1][i] ? inten : 0);
+  matchedSpectra[0][1] = matchedSpectra[0][1].map((inten,i) => matchedSpectra[1][1][i] > 0 ? inten : 0);
   var sumP = matchedSpectra[0][1].reduce((a,b)=>a+b,0);
-  var sumQ = matchedSpectra[1][1].reduce((a,b)=>a+b,0);
-  var proportionsP = matchedSpectra[0][1].map(inten=>inten/sumP);
-  var proportionsQ = matchedSpectra[1][1].map(inten=>inten/sumQ);
-  var kld = proportionsP.map((propP,i)=> propP ? propP*Math.log(propP/proportionsQ[i]) : 0).reduce((a,b)=>a+b);
-  return(2-2/(1+Math.exp(-kld)));
+  if (sumP > 0) {
+   var sumQ = matchedSpectra[1][1].reduce((a,b)=>a+b,0);
+   var proportionsP = matchedSpectra[0][1].map(inten=>inten/sumP);
+   var proportionsQ = matchedSpectra[1][1].map(inten=>inten/sumQ);
+   var kld = proportionsP.map((propP,i)=> propP ? propP*Math.log(propP/proportionsQ[i]) : 0).reduce((a,b)=>a+b);
+   return(2-2/(1+Math.exp(-kld)));
+  } else return 0;
  };
 
  _Spectrum._SOURCE = _SOURCE;

@@ -15,7 +15,7 @@ if (typeof SQL) MSLIB.Format.SQLiteFile = function _SOURCE() {
     MSLIB.Common.progress(this,((data.loaded/data.total)*100).toFixed(2));
    }
   }
-  MSLIB.Common.initialise(this):
+  MSLIB.Common.initialise(this);
   this.fileType    = "generic_sqlite";
   this.database    = {};
   this.query       = {sql: "", result: {}};
