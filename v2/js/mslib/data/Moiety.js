@@ -7,8 +7,8 @@ export let Moiety = function _SOURCE() {
   if (typeof(m) !== 'undefined') Object.entries(m).filter(([k,v]) => Object.keys(this).includes(k)).forEach(([k,v]) => m[k] = v);
  };
 
- let check = function(m1) {
-  if (!m1) throw new Error('MoietyMathInvalidMoiety')
+ let check = function(m) {
+  if (!m) throw new Error('MoietyMathInvalidMoiety')
  }
 
  let clone = function(m) {
@@ -20,7 +20,7 @@ export let Moiety = function _SOURCE() {
   check(m2);
   let r = clone(m1);
   if (newSymbol) r.symbol = newSymbol;
-  else if (m1.symbol && m2.symbol) r.symbol = { text : `${m1.symbol.text}${m1.symbol.text.length && m2.symbol.text.length ? '+' : ''}${m2.symbol.text}` , display : 'text' };
+  else if (m1.symbol && m2.symbol) r.symbol = { text : `${m1.symbol.text}${m1.symbol.text.length && m2.symbol.text.length && (m2.symbol.text.charAt(0) != '-') ? '+' : ''}${m2.symbol.text}` , display : 'text' };
   Object.entries(m2.atoms).forEach(([k,v]) => r.atoms[k] = (r.atoms[k] ? r.atoms[k] : 0) + v);
   if (m2.massDelta) {
    if (r.massDelta) { r.massDelta += m2.massDelta } else r.massDelta = m2.massDelta;
