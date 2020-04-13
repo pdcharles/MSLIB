@@ -48,32 +48,40 @@ export let ResidueChain = function _SOURCE() {
    else throw new Error('ResidueChainUnknownToken \''+t+'\'');
   })
 
-  if (residueData.fixedModifications) {
+  if ('fixedModifications' in residueData) {
    Object.entries(residueData.fixedModifications).forEach(([key,v]) => {
     let [ tokens, undefined ] = getTokensAndMassDeltas(key,possibleResiduesByToken)
-    if (Number.isInteger(+v)) {
+    if (!Number.isNaN(+v)) {
      this.residueArray.forEach((residue,pos) => { 
-      if (tokens.some(t => t==residue.symbol)) this.residueArray[pos] = mslib.data.Moiety.addMassDelta(residue,+v,residue.symbol)
+      if (tokens.some(t => t==residue.token)) {
+       this.residueArray[pos] = mslib.data.Moiety.addMassDelta(residue,+v,{ text: `${residue.symbol.text}(${+v})`, display: 'text' });
+       this.residueArray[pos].token = `${residue.token}(${+v})`;
+      }
      });
     }
     else {
      if (typeof(v) === 'string') {
-      if (residueData.modificationDefinitions[v]) v = residueData.modificationDefinitions[v];
+      if (v in residueData.modificationDefinitions) v = residueData.modificationDefinitions[v];
       else throw new Error('ResidueChainUndefinedFixedModification');
      }
      else if (typeof(v) !== 'object' || !v.atoms) throw new Error('ResidueChainMalformedFixedModicationDefinition');
      this.residueArray.forEach((residue,pos) => { 
-      if (tokens.some(t => t==residue.symbol)) this.residueArray[pos] = mslib.data.Moiety.add(residue,v,residue.symbol);
+      if (tokens.some(t => t==residue.token)) {
+       this.residueArray[pos] = mslib.data.Moiety.add(residue,v,{ text: `${residue.symbol.text}(${v.symbol.text})`, display: 'text' });
+       this.residueArray[pos].token = `${residue.token}(${v.token})`;
+      }
      });
     }
    });
   }
-  if (residueData.variableModifications) {
+
+  if ('variableModifications' in residueData) {
    Object.entries(residueData.variableModifications).forEach(([key,v]) => {
     if (Number.isInteger(+key)) {
      let pos = +key-1;
-     if (Number.isInteger(+v)) {
-      this.residueArray[pos] = mslib.data.Moiety.addMassDelta(this.residueArray[pos],+v,this.residueArray[pos].symbol);
+     if (!Number.isNaN(+v)) {
+      this.residueArray[pos] = mslib.data.Moiety.addMassDelta(this.residueArray[pos],+v,{ text: `${this.residueArray[pos].symbol.text}(${+v})`, display: 'text' });
+      this.residueArray[pos].token = `${residue.token}(${+v})`;
      }
      else {
       if (typeof(v) === 'string') {
@@ -81,25 +89,25 @@ export let ResidueChain = function _SOURCE() {
        else throw new Error('ResidueChainUndefinedVariableModification');
       }
       else if (typeof(v) !== 'object' || !v.atoms) throw new Error('ResidueChainMalformedVariableModicationDefinition');
-      this.residueArray[pos] = mslib.data.Moiety.add(this.residueArray[pos],v,this.residueArray[pos].symbol);
+      this.residueArray[pos] = mslib.data.Moiety.add(this.residueArray[pos],v,{ text: `${this.residueArray[pos].symbol.text}(${v.symbol.text})`, display: 'text' });
+      this.residueArray[pos].token = `${residue.token}(${v.token})`;
      }    
     }
     else throw new Error('ResidueChainCannotParseVariableModificationPosition');
    });
   }
-//  console.log(this.residueArray);
  }
 
  let getTokensAndMassDeltas = function(seqString,possibleResiduesByToken) {
   if (!seqString.length) throw new Error('ResidueChainTokenParsingZeroLengthSeqString');
 
-  let residueSymbolString = Object.keys(possibleResiduesByToken).join('|').replace(/(\(|\)|\[|\])/g,m => '\\'+m);
+  let residueTokenString = Object.keys(possibleResiduesByToken).join('|').replace(/(\(|\)|\[|\])/g,m => '\\'+m);
 
   let tokens = [];
   let massDeltas = [];
   let pos = 0;
 
-  let tokenRegex = new RegExp(`^(${residueSymbolString})(?:\\(([+-](?:\\d+|\\d+\\.\\d+|\\.\\d+))\\))?`);
+  let tokenRegex = new RegExp(`^(${residueTokenString})(?:\\(([+-](?:\\d+|\\d+\\.\\d+|\\.\\d+))\\))?`);
   let tokenRegexCaseInsensitive = new RegExp(tokenRegex,'i');
 
   do {
@@ -127,75 +135,6 @@ export let ResidueChain = function _SOURCE() {
 //  console.log([tokens,massDeltas]);
   return [ tokens , massDeltas ];
  }
-
-
-//
-//  this.productStructureTable = {};
-//  this.productStructureTable.series = [...Object.keys(fragN),...Object.keys(fragC)].reduce((obj,k) => {obj[k]=Array(residueArrays.length).fill([]); return obj},{});
-//  this.productStructureTable['i'] = {};
-//  this.productStructureTable['p'] = {};
-//
-//  this.precursor = {};
-//  this.productMassTable = { series : {} };
-//
-//  this.residueArrays.forEach((residueArray,r) => {
-//
-//  //Get N-term products, and total as precursor
-//   residueArray.slice(0,-1).reduce((accumulator,residue,i) => {
-//    let M = mslib.data.Moiety.add(accumulator,residue)
-//    Object.entries(fragN).forEach(([k,v]) => { this.productStructureTable.series[r][k][i] = v(M) });
-//    return M;
-//   },mslib.constants.MOIETIES.NTERM)
-//
-//   //Get C-term products by working from the other end
-//   residueArray.slice(1).reduceRight((accumulator,residue,i,arr) => {
-//    let M = mslib.data.Moiety.add(residue,accumulator)
-//    Object.entries(fragC).forEach(([k,v]) => { this.productStructureTable.series[r][k][arr.length-i-1] = v(M) });
-//    return M;
-//   },mslib.constants.MOIETIES.CTERM);
-//
-//   let residueArrayTotal = mslib.data.Moiety.add(residueArray.reduce((accumulator,residue,i) => {
-//    return mslib.data.Moiety.add(accumulator,residue)
-//   }),mslib.constants.MOIETIES.CTERM)
-//
-//   Object.entries(nonfrag).forEach(([k,v]) => { this.productStructureTable['s'][r][k] = v(residueArrayTotal) });
-// 
-//   this.precursor = mslib.data.Moiety.add(this.precursor,residueArrayTotal);
-// 
-//   residueArray.filter((residue,i) => i == residueArray.indexOf(residue)).forEach(residue => {
-//    this.productStructureTable['i']['i'+residue.symbol] = immonium(residue)
-//   });
-//
-//   this.productMassTable.series[r] = Object.entries(this.productStructureTable.series[r]).reduce((obj,[ion,series]) => {
-//    obj[ion] = series.map(m => mslib.data.Moiety.monoisotopicMz(m,1));
-//    return obj;
-//   },{});
-//
-//  });
-
-//  Object.entries(nonfrag).forEach(([k,v]) => { this.productStructureTable['p'][k] = v(this.precursor) });
-//
-//
-//  Object.entries(this.productStructureTable).filter(([k,v]) => ['p','i'].includes(k)).forEach(([k,v]) => {
-//   this.productMassTable[k] = Object.entries(v).reduce((obj,[res,m]) => {
-//    obj[res]=mslib.data.Moiety.monoisotopicMz(m,1);
-//    return obj;
-//   },{});
-//  });
-//
-//  this.products = [
-//   ...Object.entries(this.productMassTable).filter(([k,v]) => ['p','i'].includes(k)).reduce((acc,[k,v]) => {
-//    acc.push(...Array.from(Object.entries(v))); 
-//    return acc;
-//   },[]),
-//   ...Object.entries(this.productMassTable.series).reduce((acc,[k,v]) => {
-//    acc.push(...v.map((m,i) => [k+(i+1),m]));
-//    return acc;
-//   },[])
-//  ].sort((a,b) => (a[1]-b[1]));
-// }
-// 
-
 
  _ResidueChain._SOURCE = _SOURCE;
  return _ResidueChain;
