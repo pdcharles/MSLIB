@@ -5,6 +5,8 @@ export let MonosaccharideChain = function _SOURCE() {
  let _MonosaccharideChain = function(residueData) {
   mslib.data.base.ResidueChain.call(this, residueData, mslib.constants.RESIDUES.MONOSACCHARIDES);
   this.type = 'MonosaccharideChain';
+  this.notationSingular = 'G';
+  this.notationPlural = ['G1','G2','G3','G4','G5','G6','G7','G8'];
  };
  _MonosaccharideChain.prototype = Object.create((typeof ResidueChain !== 'undefined') ? ResidueChain.prototype : mslib.data.base.ResidueChain.prototype);
 

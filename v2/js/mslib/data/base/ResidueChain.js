@@ -4,7 +4,9 @@ export let ResidueChain = function _SOURCE() {
 
  let _ResidueChain = function(residueData,baseResidues) {
 
-  this.type = null;
+  this.type = 'unknown';
+  this.notationSingular = '?';
+  this.notationPlural = ['?','?','?','?','?','?','?','?','?','?'];
 
   if (typeof(residueData) === 'string') residueData = { sequenceString : residueData };
 

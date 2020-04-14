@@ -5,6 +5,8 @@ export let AminoAcidChain = function _SOURCE() {
  let _AminoAcidChain = function(residueData) {
   mslib.data.base.ResidueChain.call(this, residueData, mslib.constants.RESIDUES.AMINOACIDS);
   this.type = 'AminoAcidChain';
+  this.notationSingular = '';
+  this.notationPlural = ['α','β','γ','δ']; //Assuming 4 crosslink limit!
  };
  _AminoAcidChain.prototype = Object.create((typeof ResidueChain !== 'undefined') ? ResidueChain.prototype : mslib.data.base.ResidueChain.prototype);
 
