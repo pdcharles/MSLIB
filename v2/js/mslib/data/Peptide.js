@@ -3,7 +3,7 @@ export let Peptide = function _SOURCE() {
  let _Peptide = function(data) {
 
   if (!('chains' in data) || data.chains.length < 1) throw new Error ('no primary');
- 
+
   this.chains = data.chains;
   if ('branches' in data) {
    this.branches = data.branches;
@@ -45,13 +45,13 @@ export let Peptide = function _SOURCE() {
   }
 
   Object.entries(this.subsets).forEach(([k,v]) => {
-   Object.entries(mslib.data[this.chains[v.chainIdx].type].products[v.descending ? 'descending' : 'ascending'])
-   .forEach(([notation,func]) => {
+    Object.entries(mslib.data[this.chains[v.chainIdx].type].products[v.descending ? 'descending' : 'ascending'])
+    .forEach(([notation,func]) => {
     let id = `${v.chainIdx}${notation}${v.n}`
-    this.products[id] = func(v);
+     this.products[id] = func(v);
     this.products[id].subsetKey = k;
-    this.products[id].caption = id;
-   });
+     this.products[id].caption = id;
+    });
   });
   Object.entries(this.uniqueResidues).forEach(([k,v]) => {
    let id = `${v.chainIdx}i${k}`
@@ -103,7 +103,7 @@ export let Peptide = function _SOURCE() {
   
   if (storeSubset) {
    let subsetCode = (descending ? '←' : '→')+chainIdx+'_'+position+'_'+residue.token+'['+accumulator.n+']';
- 
+  
    if (!(subsetCode in this.subsets)) {
     this.subsets[subsetCode] = accumulator;
     this.subsets[subsetCode].caption=null;
@@ -134,25 +134,3 @@ export let Peptide = function _SOURCE() {
  return _Peptide;
 
 }();
-
-//
-// _ResidueChain.prototype.products = {
-//  //unfragmented
-//  'p'  : M => M,
-//  'p*' : M => mslib.data.Moiety.subtract(M,mslib.constants.MOIETIES.AMMONIA),
-//  'p°' : M => mslib.data.Moiety.subtract(M,mslib.constants.MOIETIES.WATER),
-//  //Nterm fragment
-//  'a'  : M => mslib.data.Moiety.subtract(M,mslib.constants.MOIETIES.CHO),
-//  'a*' : M => mslib.data.Moiety.subtract(this.ion.a(M),mslib.constants.MOIETIES.AMMONIA),
-//  'a°' 	: M => mslib.data.Moiety.subtract(this.ion.a(M),mslib.constants.MOIETIES.WATER),
-//  'b'  : M => mslib.data.Moiety.subtract(M,mslib.constants.MOIETIES.H),
-//  'b*' : M => mslib.data.Moiety.subtract(this.ion.b(M),mslib.constants.MOIETIES.AMMONIA),
-//  'b°' : M => mslib.data.Moiety.subtract(this.ion.b(M),mslib.constants.MOIETIES.WATER),
-//  'c'  : M => mslib.data.Moiety.add(M,mslib.constants.MOIETIES.NH2),
-//  //Cterm fragment
-//  'x'  : M => mslib.data.Moiety.subtract(mslib.data.Moiety.add(M,mslib.constants.MOIETIES.CO),mslib.constants.MOIETIES.H),
-//  'y'  : M => mslib.data.Moiety.add(M,mslib.constants.MOIETIES.H),
-//  'y*' : M => mslib.data.Moiety.subtract(this.ion.y(M),mslib.constants.MOIETIES.AMMONIA),
-//  'y°' : M => mslib.data.Moiety.subtract(this.ion.y(M),mslib.constants.MOIETIES.WATER),
-//  'z'  : M => mslib.data.Moiety.subtract(M,mslib.constants.MOIETIES.NH2)
-// }
