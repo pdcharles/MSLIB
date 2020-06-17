@@ -123,9 +123,12 @@ export let ResidueChain = function _SOURCE() {
    let s = seqString.substring(pos);
    let match;
    if (tokens.length && ( match = s.match(multiplierRegex) )) {
-    if (!Number.isInteger(+match[1])) throw new Error('ResidueChainTokenMultiplierParseError');
-    tokens = tokens.concat(Array(+match[1]).fill(tokens[tokens.length-1]));
-    massDeltas = massDeltas.concat(Array(+match[1]).fill(massDeltas[massDeltas.length-1]));
+    let multiplier = +match[1];
+    if (!Number.isInteger(multiplier)) throw new Error('ResidueChainTokenMultiplierParseError');
+    if (multiplier > 1) {
+     tokens = tokens.concat(Array(multiplier-1).fill(tokens[tokens.length-1]));
+     massDeltas = massDeltas.concat(Array(multiplier-1).fill(massDeltas[massDeltas.length-1]));
+    }
    }
    else {
     let token;
