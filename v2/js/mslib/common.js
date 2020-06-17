@@ -71,7 +71,7 @@ export let common = function _SOURCE() {
    if (!o) return [];
    let namespace = (namespaces && namespaces[i]);
    if (!namespace) return [];
-   let declaration = (namespace.indexOf(".") < 0 ? "let " : "")+namespace+"=";
+   let declaration = (namespace.includes(".") ? "let " : "")+namespace+"=";
    if (o._SOURCE) return declaration+o._SOURCE.toString()+"()";
    else return [].concat.apply([declaration+"{}"],
                                Object.keys(o)

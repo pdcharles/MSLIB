@@ -29,7 +29,7 @@ export let MgfFile = function _SOURCE() {
      var startIndex = 0;
      for (var j = startIndex; j < mgfEntryLines.length; j++) {
       if (!mgfEntryLines[j].length) continue;
-      if (mgfEntryLines[j].indexOf("=") <= 0) {
+      if (mgfEntryLines[j].includes('=')) {
        startIndex = j;
        break;
       }
