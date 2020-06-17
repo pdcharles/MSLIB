@@ -19,6 +19,18 @@ export let constants = function _SOURCE() {
                [ 13.00335484,  0.01108 ]
               ]              
    },
+   CARBON13:
+   {
+    token : '13C',
+    symbol : {
+     text : '13C',
+     display : 'text'
+    },
+    isotopes: [
+               [ 12.00000000,  0.005 ],    //SILAC Carbon-13 incorporation typically ~99.5% (Thermo & Sigma reagents)
+               [ 13.00335484,  0.995 ]
+              ]              
+   },
    HYDROGEN:
    {
     token : 'H',
@@ -43,6 +55,18 @@ export let constants = function _SOURCE() {
                [ 15.00010890, 0.00366 ] 
               ]
    },
+   NITROGEN15:
+   {
+    token : '15N',
+    symbol : {
+     text : '15N',
+     display : 'text'
+    },
+    isotopes: [
+               [ 14.00307400, 0.005 ],     //SILAC Nitrogen-15 incorporation typically ~99.5% (Thermo & Sigma reagents)
+               [ 15.00010890, 0.995 ] 
+              ]
+   },
    OXYGEN:
    {
     token : 'O',
@@ -64,7 +88,7 @@ export let constants = function _SOURCE() {
      display : 'text'
     },
     isotopes: [
-               [ 30.97376200, 1 ]           //N/A
+               [ 30.9737619986, 1 ]           //N/A
               ]
    },
    SULPHUR:
@@ -79,6 +103,18 @@ export let constants = function _SOURCE() {
                [ 32.97146,  0.0074869 ],
                [ 33.96787,  0.0419599 ],
                [ 35.96708,  0.0001458 ]
+              ]
+   },
+   BROMINE:
+   {
+    token : 'Br',
+    symbol : {
+     text : 'Br',
+     display : 'text'
+    },
+    isotopes: [
+               [ 78.9183371,  0.50686 ],    //NIST SRM 977
+               [ 80.9162906,  0.49314 ]
               ]
    }
   },
@@ -606,6 +642,94 @@ export let constants = function _SOURCE() {
      OXYGEN  :1
     },
     caption : 'Water'
+   }
+  },
+  MODIFICATIONS:
+  {
+   OXIDATION:  {
+    token: 'ox',
+    symbol: {
+     text: 'ox',
+     display: 'text'
+    },
+    allowedResidues: ['M'],
+    atoms: {
+            OXYGEN: 1
+           },
+    caption : 'Oxidation'
+   },
+   CARBAMIDOMETHYLATION: {
+    token: 'cam',
+    symbol: {
+     text: 'cam',
+     display: 'text'
+    },
+    allowedResidues: ['C'],
+    atoms: {
+            CARBON: 2,
+            HYDROGEN: 3,
+            NITROGEN: 1,
+            OXYGEN: 1
+           },
+    caption : 'Carbamidomethylation'
+   },
+   DEAMIDATION: {
+    token: 'd',
+    symbol: {
+     text: 'd',
+     display: 'text'
+    },
+    allowedResidues: ['N','Q'],
+    atoms: {
+            HYDROGEN: -1,
+            NITROGEN: -1,
+            OXYGEN: 1
+           },
+    caption : 'Deamidation'
+   },
+   PHOSPHORYLATION: {
+    token: 'p',
+    symbol: {
+     text: 'p',
+     display: 'text'
+    },
+    allowedResidues: ['N','Q'],
+    atoms: {
+            HYDROGEN: 1,
+            OXYGEN: 3,
+            PHOSPHORUS: 1
+           },
+    caption : 'Phosphorylation'
+   }
+   SILAC_LYS8: {
+    token: 'sK8',
+    symbol: {
+     text: 'sK8',
+     display: 'text'
+    },
+    allowedResidues: ['K'],
+    atoms: {
+            CARBON: -6,
+            CARBON13: 6,
+            NITROGEN: -2,
+            NITROGEN15: 2
+           },
+    caption : '13C(6)15N(2) Lysine'
+   },
+   SILAC_ARG10: {
+    token: 'sR10',
+    symbol: {
+     text: 'sR10',
+     display: 'text'
+    },
+    allowedResidues: ['R'],
+    atoms: {
+            CARBON: -6,
+            CARBON13: 6,
+            NITROGEN: -4,
+            NITROGEN15: 4
+           },
+    caption : '13C(6)15N(4) Arginine'
    }
   }
  }
