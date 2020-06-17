@@ -1,6 +1,6 @@
 export let Chromatogram = function _SOURCE() {
 
- var _Chromatogram = function(rts,ints,modulus) {
+ let _Chromatogram = function(rts,ints,modulus) {
   if ([rts,ints].some((v) => !((typeof(v) == "object") && Array.isArray(v)))) {
    console.log("the first two arguments to mslib.Chromatogram must be an array");
    return {};
