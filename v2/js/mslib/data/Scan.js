@@ -10,6 +10,7 @@ export let Scan = function _SOURCE() {
   this.centroided           = scan.centroided || null;
   this.lowMz                = scan.lowMz || null;
   this.highMz               = scan.highMz || null;
+  this.collisionEnergy      = scan.collisionEnergy || null;
   this.totalCurrent         = scan.totalCurrent || null;
   this.basePeakMz           = scan.basePeakMz || null;
   this.basePeakIntensity    = scan.basePeakIntensity || null;
