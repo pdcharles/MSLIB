@@ -10,38 +10,38 @@ export let AminoAcidChain = function _SOURCE() {
  };
  _AminoAcidChain.prototype = Object.create((typeof ResidueChain !== 'undefined') ? ResidueChain.prototype : mslib.data.base.ResidueChain.prototype);
 
- let nterm = M => mslib.data.Moiety.add(mslib.constants.MOIETIES.NTERM,M);
- let cterm = M => mslib.data.Moiety.add(M,mslib.constants.MOIETIES.CTERM);
+ let nterm = M => mslib.moietymath.add(mslib.constants.MOIETIES.NTERM,M);
+ let cterm = M => mslib.moietymath.add(M,mslib.constants.MOIETIES.CTERM);
 
  let products = {
   nonfragment : {
    'p'  : M => cterm(nterm(M)),
-   'p*' : M => mslib.data.Moiety.subtract(products.nonfragment.p(M),mslib.constants.MOIETIES.AMMONIA),
-   'p°' : M => mslib.data.Moiety.subtract(products.nonfragment.p(M),mslib.constants.MOIETIES.WATER)
+   'p*' : M => mslib.moietymath.subtract(products.nonfragment.p(M),mslib.constants.MOIETIES.AMMONIA),
+   'p°' : M => mslib.moietymath.subtract(products.nonfragment.p(M),mslib.constants.MOIETIES.WATER)
   },
 
-  immonium : R => mslib.data.Moiety.subtract(R,mslib.constants.MOIETIES.CO),
+  immonium : R => mslib.moietymath.subtract(R,mslib.constants.MOIETIES.CO),
 
   ascending : {
-   'a'  : M => mslib.data.Moiety.subtract(nterm(M),mslib.constants.MOIETIES.CHO),
-   'a*' : M => mslib.data.Moiety.subtract(products.ascending.a(M),mslib.constants.MOIETIES.AMMONIA),
-   'a°' 	: M => mslib.data.Moiety.subtract(products.ascending.a(M),mslib.constants.MOIETIES.WATER),
+   'a'  : M => mslib.moietymath.subtract(nterm(M),mslib.constants.MOIETIES.CHO),
+   'a*' : M => mslib.moietymath.subtract(products.ascending.a(M),mslib.constants.MOIETIES.AMMONIA),
+   'a°' 	: M => mslib.moietymath.subtract(products.ascending.a(M),mslib.constants.MOIETIES.WATER),
 
-   'b'  : M => mslib.data.Moiety.subtract(nterm(M),mslib.constants.MOIETIES.H),
-   'b*' : M => mslib.data.Moiety.subtract(products.ascending.b(M),mslib.constants.MOIETIES.AMMONIA),
-   'b°' : M => mslib.data.Moiety.subtract(products.ascending.b(M),mslib.constants.MOIETIES.WATER),
+   'b'  : M => mslib.moietymath.subtract(nterm(M),mslib.constants.MOIETIES.H),
+   'b*' : M => mslib.moietymath.subtract(products.ascending.b(M),mslib.constants.MOIETIES.AMMONIA),
+   'b°' : M => mslib.moietymath.subtract(products.ascending.b(M),mslib.constants.MOIETIES.WATER),
 
-   'c'  : M => mslib.data.Moiety.add(nterm(M),mslib.constants.MOIETIES.NH2)
+   'c'  : M => mslib.moietymath.add(nterm(M),mslib.constants.MOIETIES.NH2)
   },
 
   descending : {
-   'x'  : M => mslib.data.Moiety.subtract(mslib.data.Moiety.add(cterm(M),mslib.constants.MOIETIES.CO),mslib.constants.MOIETIES.H),
+   'x'  : M => mslib.moietymath.subtract(mslib.moietymath.add(cterm(M),mslib.constants.MOIETIES.CO),mslib.constants.MOIETIES.H),
 
-   'y'  : M => mslib.data.Moiety.add(cterm(M),mslib.constants.MOIETIES.H),
-   'y*' : M => mslib.data.Moiety.subtract(products.descending.y(M),mslib.constants.MOIETIES.AMMONIA),
-   'y°' : M => mslib.data.Moiety.subtract(products.descending.y(M),mslib.constants.MOIETIES.WATER),
+   'y'  : M => mslib.moietymath.add(cterm(M),mslib.constants.MOIETIES.H),
+   'y*' : M => mslib.moietymath.subtract(products.descending.y(M),mslib.constants.MOIETIES.AMMONIA),
+   'y°' : M => mslib.moietymath.subtract(products.descending.y(M),mslib.constants.MOIETIES.WATER),
 
-   'z'  : M => mslib.data.Moiety.subtract(cterm(M),mslib.constants.MOIETIES.NH2)
+   'z'  : M => mslib.moietymath.subtract(cterm(M),mslib.constants.MOIETIES.NH2)
   }
  }
 

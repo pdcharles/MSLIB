@@ -12,39 +12,46 @@ export let ResidueChain = function _SOURCE() {
 
   if (!residueData.modificationNotationStyles) residueData.modificationNotationStyles = { 'modX' : true, 'X(mod)' : true, 'X[mod]' : true }
 
-  let possibleResiduesByToken = Object.entries(baseResidues).reduce((obj,[key,residue]) => { 
+  let possibleResidueTokens = Object.entries(baseResidues).reduce((obj,[key,residue]) => { 
    obj[residue.token] = residue;
    obj[residue.token].label = key;
    return obj;
   },{});
 
   if ('residueDefinitions' in residueData) {
-   this.possibleResiduesByToken = Object.entries(residueData.residueDefinitions).reduce((obj,[key,residue]) => { 
+   this.possibleResidueTokens = Object.entries(residueData.residueDefinitions).reduce((obj,[key,residue]) => { 
     obj[residue.token] = residue;
     obj[residue.token].label = key;
     return obj;
-   },possibleResiduesByToken);
+   },possibleResidueTokens);
   }
 
   if ('modificationDefinitions' in residueData) {
-   Object.entries(residueData.modificationDefinitions).forEach(([key,v]) => {
-    if (Number.isInteger(+key)) throw new Error('ResidueChainIllegalModification \''+key+'\'');
-    if (v.allowedResidues) v.allowedResidues.forEach(residueToken => {
-     if (!(residueToken in possibleResiduesByToken)) throw new Error('ResidueChainIllegalModifiedResidueToken \''+residueToken+'\'');
-     modifiedResidue = mslib.data.Moiety.add(possibleResiduesByToken[residueToken],v.atoms,key.toLowerCase()+residueToken);
-     if (residueData.modificationNotationStyles['modX']) possibleResiduesByToken[key.toLowerCase()+residueToken] = modifiedResidue;
-     if (residueData.modificationNotationStyles['X(mod)']) possibleResiduesByToken[residue+'('+key+')'] = modifiedResidue;
-     if (residueData.modificationNotationStyles['X[mod]']) possibleResiduesByToken[residue+'['+key+']'] = modifiedResidue;
+   Object.values(residueData.modificationDefinitions).forEach(mod => {
+    if (Number.isInteger(+mod.token)) throw new Error('ResidueChainIllegalModification \''+mod.token+'\'');
+    if ('allowedResidues' in mod) Object.values(possibleResidueTokens)
+                                  .filter(r => mod.allowedResidues.includes(r.token))
+                                  .forEach(residue => {
+     let modifiedResidue = mslib.moietymath.add(residue,mod,{ text: residue.symbol.text, note: mod.symbol.text, display: 'text' });
+     if (residueData.modificationNotationStyles['modX']) possibleResidueTokens[mod.token.toLowerCase()+residue.token] = modifiedResidue;
+     if (residueData.modificationNotationStyles['X(mod)']) {
+      possibleResidueTokens[residue.token+'\('+mod.token+'\)'] = modifiedResidue;
+      possibleResidueTokens[residue.token+'\('+mod.token.toLowerCase()+'\)'] = modifiedResidue;
+     }
+     if (residueData.modificationNotationStyles['X[mod]']) {
+      possibleResidueTokens[residue.token+'\['+mod.token+'\]'] = modifiedResidue;
+      possibleResidueTokens[residue.token+'\['+mod.token.toLowerCase()+'\]'] = modifiedResidue;
+     }
     });
    });
   }
 
-  let [ tokens, massDeltas ] = getTokensAndMassDeltas(residueData.sequenceString,possibleResiduesByToken);
-  this.residueArray = tokens.map((t,i) => {
+  let [ tokens, massDeltas ] = getTokensAndMassDeltas(residueData.sequenceString,possibleResidueTokens);
+  this.residues = tokens.map((t,i) => {
    let residue;
-   if (t in possibleResiduesByToken) {
-    residue = mslib.data.Moiety.clone(possibleResiduesByToken[t]);
-    if (massDeltas[i]) residue = mslib.data.Moiety.addMassDelta(residue,massDeltas[i]);
+   if (t in possibleResidueTokens) {
+    residue = mslib.moietymath.clone(possibleResidueTokens[t]);
+    if (massDeltas[i]) residue = mslib.moietymath.addMassDelta(residue,massDeltas[i],{ text: residue.symbol.text, note: (massDeltas[i] > 0 ? '+' : '')+massDeltas[i], display: 'text' });
     return residue;
    }
    else throw new Error('ResidueChainUnknownToken \''+t+'\'');
@@ -52,12 +59,12 @@ export let ResidueChain = function _SOURCE() {
 
   if ('fixedModifications' in residueData) {
    Object.entries(residueData.fixedModifications).forEach(([key,v]) => {
-    let [ tokens, undefined ] = getTokensAndMassDeltas(key,possibleResiduesByToken)
+    let [ tokens, undefined ] = getTokensAndMassDeltas(key,possibleResidueTokens)
     if (!Number.isNaN(+v)) {
-     this.residueArray.forEach((residue,pos) => { 
+     this.residues.forEach((residue,pos) => { 
       if (tokens.some(t => t==residue.token)) {
-       this.residueArray[pos] = mslib.data.Moiety.addMassDelta(residue,+v,{ text: `${residue.symbol.text}(${+v})`, display: 'text' });
-       this.residueArray[pos].token = `${residue.token}(${+v})`;
+       this.residues[pos] = mslib.moietymath.addMassDelta(residue,+v,{ text: residue.symbol.text, note: (v > 0 ? '+' : '')+v, display: 'text' });
+       this.residues[pos].token = `${residue.token}(${+v})`;
       }
      });
     }
@@ -67,10 +74,10 @@ export let ResidueChain = function _SOURCE() {
       else throw new Error('ResidueChainUndefinedFixedModification');
      }
      else if (typeof(v) !== 'object' || !v.atoms) throw new Error('ResidueChainMalformedFixedModicationDefinition');
-     this.residueArray.forEach((residue,pos) => { 
+     this.residues.forEach((residue,pos) => { 
       if (tokens.some(t => t==residue.token)) {
-       this.residueArray[pos] = mslib.data.Moiety.add(residue,v,{ text: `${residue.symbol.text}(${v.symbol.text})`, display: 'text' });
-       this.residueArray[pos].token = `${residue.token}(${v.token})`;
+       this.residues[pos] = mslib.moietymath.add(residue,v,{ text: residue.symbol.text, note: v.symbol.text, display: 'text' });
+       this.residues[pos].token = `${residue.token}(${v.token})`;
       }
      });
     }
@@ -82,8 +89,8 @@ export let ResidueChain = function _SOURCE() {
     if (Number.isInteger(+key)) {
      let pos = +key-1;
      if (!Number.isNaN(+v)) {
-      this.residueArray[pos] = mslib.data.Moiety.addMassDelta(this.residueArray[pos],+v,{ text: `${this.residueArray[pos].symbol.text}(${+v})`, display: 'text' });
-      this.residueArray[pos].token = `${residue.token}(${+v})`;
+      this.residues[pos] = mslib.moietymath.addMassDelta(this.residues[pos],+v,{ text: this.residues[pos].symbol.text, note: v.symbol.text, display: 'text' });
+      this.residues[pos].token = `${residue.token}(${+v})`;
      }
      else {
       if (typeof(v) === 'string') {
@@ -91,8 +98,8 @@ export let ResidueChain = function _SOURCE() {
        else throw new Error('ResidueChainUndefinedVariableModification');
       }
       else if (typeof(v) !== 'object' || !v.atoms) throw new Error('ResidueChainMalformedVariableModicationDefinition');
-      this.residueArray[pos] = mslib.data.Moiety.add(this.residueArray[pos],v,{ text: `${this.residueArray[pos].symbol.text}(${v.symbol.text})`, display: 'text' });
-      this.residueArray[pos].token = `${residue.token}(${v.token})`;
+      this.residues[pos] = mslib.moietymath.add(this.residues[pos],v,{ text: this.residues[pos].symbol.text, note: v.symbol.text, display: 'text' });
+      this.residues[pos].token = `${residue.token}(${v.token})`;
      }    
     }
     else throw new Error('ResidueChainCannotParseVariableModificationPosition');
@@ -100,10 +107,10 @@ export let ResidueChain = function _SOURCE() {
   }
  }
 
- let getTokensAndMassDeltas = function(seqString,possibleResiduesByToken) {
+ let getTokensAndMassDeltas = function(seqString,possibleResidueTokens) {
   if (!seqString.length) throw new Error('ResidueChainTokenParsingZeroLengthSeqString');
 
-  let residueTokenString = Object.keys(possibleResiduesByToken).join('|').replace(/(\(|\)|\[|\])/g,m => '\\'+m);
+  let residueTokenString = Object.keys(possibleResidueTokens).sort((a,b) => b.length - a.length).join('|').replace(/(\(|\)|\[|\])/g,m => '\\'+m);
 
   let tokens = [];
   let massDeltas = [];
@@ -124,7 +131,7 @@ export let ResidueChain = function _SOURCE() {
     let token;
     if (match = s.match(tokenRegex)) token = match[1];
     else if (match = s.match(tokenRegexCaseInsensitive)) {
-     token = Object.keys(possibleResiduesByToken).find(t => t.toUpperCase() == match[1].toUpperCase());
+     token = Object.keys(possibleResidueTokens).find(t => t.toUpperCase() == match[1].toUpperCase());
     }
     if (match) {
      tokens.push(token);
