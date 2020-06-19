@@ -520,7 +520,7 @@ export let MzFile = function _SOURCE() {
   if (!t.length) {
    return [];
   }
-  let s = self.atob(t); //decode base64
+  let s = globalThis.atob(t); //decode base64
   let bytes;
   if (c && (c == ZLIB)) {
    try {

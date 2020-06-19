@@ -2,11 +2,11 @@ export let common = function _SOURCE() {
 
  let workerPool = [];
  let taskQueue = [];
- self.wp = workerPool; //for monitoring
- self.tq = taskQueue; //for monitoring
+ globalThis.wp = workerPool; //for monitoring
+ globalThis.tq = taskQueue; //for monitoring
 
  let initWorker = function(coreModuleFilter,extraModules,extraModuleNamespaces,extraModuleFilters) {
-  let w = new Worker(getMslibWorkerURI(e => self.postMessage(eval(e.data.shift())(...e.data)),...arguments));
+  let w = new Worker(getMslibWorkerURI(e => globalThis.postMessage(eval(e.data.shift())(...e.data)),...arguments));
   w.addEventListener("message", (e) => {
    if (e.data) w.resolve(e.data);
    else w.reject(e);
@@ -60,7 +60,7 @@ export let common = function _SOURCE() {
  let getMslibWorkerURI = function(onMessage,coreModuleFilter,extraModules,extraModuleNamespaces,extraModuleFilters) {
   return URL.createObjectURL(new Blob([
    getRecursiveSOURCE([mslib],["mslib"],[coreModuleFilter]).concat(getRecursiveSOURCE(extraModules,extraModuleNamespaces,extraModuleFilters),
-    "self.addEventListener(\"message\","+onMessage.toString()+");"
+    "globalThis.addEventListener(\"message\","+onMessage.toString()+");"
    ).join(";\n")
   ]));
  }
@@ -89,7 +89,7 @@ export let common = function _SOURCE() {
   Promise.resolve().then(func);
  }
 
- if (!(self.File && self.FileReader && self.Blob)) throw new Error("Reader requires full File API support");
+ if (!(globalThis.File && globalThis.FileReader && globalThis.Blob)) throw new Error("Reader requires full File API support");
  
  let Reader = function(file,parent) {
 

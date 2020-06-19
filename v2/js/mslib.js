@@ -1,4 +1,4 @@
 import * as mslib from './mslib/_index.js';
-self.mslib = mslib;
+globalThis.mslib = mslib;
 
 export { mslib };
