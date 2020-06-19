@@ -700,7 +700,7 @@ export let constants = function _SOURCE() {
             PHOSPHORUS: 1
            },
     caption : 'Phosphorylation'
-   }
+   },
    SILAC_LYS8: {
     token: 'sK8',
     symbol: {
