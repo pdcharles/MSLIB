@@ -78,13 +78,14 @@ export let moietymath = function _SOURCE() {
   check(m);
   if (typeof(elements) === 'undefined') elements = mslib.constants.ELEMENTS;
   let monoMz = monoisotopicMz(m,charge,elements);
+  let totalInt = charge * elements.HYDROGEN.isotopes[1][1];
   let massDiff = (elements.HYDROGEN.isotopes[1][0] - elements.HYDROGEN.isotopes[0][0]) * charge * elements.HYDROGEN.isotopes[1][1];
-  let totalAtoms = 0;
   Object.entries(m.atoms).forEach(([k,v]) => {
-   totalAtoms += v;
-   massDiff += (elements[k].isotopes[1][0] - elements[k].isotopes[0][0]) * v * elements[k].isotopes[1][1];
+   let contributedInt = v * elements[k].isotopes[1][1] 
+   totalInt += contributedInt;
+   massDiff += (elements[k].isotopes[1][0] - elements[k].isotopes[0][0]) * contributedInt;
   });
-  massDiff /= totalAtoms;
+  massDiff /= totalInt;
   return [monoMz,monoMz+massDiff/charge];
  }
 
