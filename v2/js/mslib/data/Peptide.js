@@ -1,6 +1,23 @@
 export let Peptide = function _SOURCE() {
  
  let _Peptide = function(data) {
+ // alt call  : function(sequence, charge, modifications)
+
+  if (typeof(data) === 'string' && arguments.length > 1 && typeof(arguments[1]) === 'number') {
+   let mods = arguments.length > 2 && typeof(arguments[2]) === 'object' ? arguments[2] : {};
+   data = { 
+    charge: arguments[1],
+    chains: [
+     new mslib.data.AminoAcidChain({
+      sequenceString: data,
+      residueDefinitions: {},
+      modificationDefinitions: {},
+      fixedModifications: {},
+      variableModifications: mods
+     })
+    ]
+   }
+  }
 
   if (!('charge' in data)) throw new Error ('no precursor charge');
   this.charge = +data.charge;
@@ -75,11 +92,18 @@ export let Peptide = function _SOURCE() {
      Object.entries(mslib.data[this.chains[v.chainIdx].type].products.nonfragment)
      .forEach(([notation,func]) => {
       let id = `${prefix}${notation}`
-      this.products[id] = func(v);
-      this.products[id].traversal = k;
-      this.products[id].id = id;
-      this.products[id].group = 'nonfragment';
-      this.products[id].type = notation;
+      if (id in this.products) {
+       this.products[id].traversal += (';'+k);
+      }
+      else {
+       this.products[id] = func(v);
+       delete(this.products[id]).descending;
+       delete(this.products[id]).unitGained;
+       this.products[id].traversal = k;
+       this.products[id].id = id;
+       this.products[id].group = 'nonfragment';
+       this.products[id].type = notation;
+      }
      });
     }
     else {
@@ -107,8 +131,8 @@ export let Peptide = function _SOURCE() {
     (v,charge) => mslib.moietymath.topNMz(2,v,charge,this.elements);
 
    Object.entries(this.products).filter(([k,v]) => v.group == 'nonfragment').forEach(([k,v]) => {
-    let similar = Object.entries(this.products).filter(([k2,v2]) => v2.type == v.type);
-    if ((k == similar[0][0]) && similar.every(([ks,vs]) => mslib.moietymath.equalComposition(vs,v))) {
+    let similar = Object.values(this.products).filter(v2 => v2.type == v.type);
+    if ((k == similar[0].id) && similar.every(vs => mslib.moietymath.equalComposition(vs,v))) {
      this.productIons[`${v.type}${'+'.repeat(this.charge)}`] = {
       mzs: getTop2Mzs(v,this.charge),
       charge: this.charge,
@@ -135,7 +159,8 @@ export let Peptide = function _SOURCE() {
      charge: 2,
      products: [v]
     };
-   }); 
+   });
+
    Object.entries(this.products).filter(([k,v]) => v.group == 'immonium').forEach(([k,v]) => {
     this.productIons[`${k}+`] = {
      mzs: getTop2Mzs(v,1),
@@ -144,6 +169,7 @@ export let Peptide = function _SOURCE() {
     };
    });
   });
+
  }
 
  let traverseChain = function(chainIdx,position,descending,storeTraversal,chainAccumulator,branchesToDo) {
@@ -184,6 +210,7 @@ export let Peptide = function _SOURCE() {
   else chainAccumulator = mslib.moietymath.add(chainAccumulator,unit);
   chainAccumulator.nResiduesThisChain++;
   chainAccumulator.nResiduesAllChains++;
+  chainAccumulator.unitGained = unit;
   if (unitHasBranch) {
    chainAccumulator.nBranches++;
    chainAccumulator.nResiduesAllChains+=unit.nResiduesAllChains;
