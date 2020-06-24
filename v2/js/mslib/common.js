@@ -88,12 +88,11 @@ export let common = function _SOURCE() {
  let callAsync = function(func) {  //To be removed when everything works as a Promise
   Promise.resolve().then(func);
  }
-
- if (!(globalThis.File && globalThis.FileReader && globalThis.Blob)) throw new Error("Reader requires full File API support");
  
  let Reader = function(file,parent) {
 
   let _reader = function(file,parent) {
+   if (!(globalThis.File && globalThis.FileReader && globalThis.Blob)) throw new Error("Reader requires full File API support");
    if ((typeof(file) == 'object') && file.constructor === File) this.file = file;
    else throw new Error("ReaderInvalidFileObject");
    initialise(this);
