@@ -3,6 +3,7 @@ export let ResidueChain = function _SOURCE() {
  const multiplierRegex = new RegExp(/^\(([1-9]\d*)\)/);
 
  let _ResidueChain = function(residueData,baseResidues) {
+  this.args = arguments;
 
   this.type = 'unknown';
   this.notationSingular = '?';
@@ -10,7 +11,7 @@ export let ResidueChain = function _SOURCE() {
 
   if (typeof(residueData) === 'string') residueData = { sequenceString : residueData };
 
-  if (!residueData.modificationNotationStyles) residueData.modificationNotationStyles = { 'modX' : true, 'X(mod)' : true, 'X[mod]' : true }
+  let modificationNotationStyles = 'modificationNotationStyles' in residueData ? residueData.modificationNotationStyles : { 'modX' : true, 'X(mod)' : true, 'X[mod]' : true };
 
   let possibleResidueTokens = Object.entries(baseResidues).reduce((obj,[key,residue]) => { 
    obj[residue.token] = residue;
@@ -19,7 +20,7 @@ export let ResidueChain = function _SOURCE() {
   },{});
 
   if ('residueDefinitions' in residueData) {
-   this.possibleResidueTokens = Object.entries(residueData.residueDefinitions).reduce((obj,[key,residue]) => { 
+   possibleResidueTokens = Object.entries(residueData.residueDefinitions).reduce((obj,[key,residue]) => { 
     obj[residue.token] = residue;
     obj[residue.token].label = key;
     return obj;
@@ -33,12 +34,12 @@ export let ResidueChain = function _SOURCE() {
                                   .filter(r => mod.allowedResidues.includes(r.token))
                                   .forEach(residue => {
      let modifiedResidue = mslib.moietymath.add(residue,mod,{ text: residue.symbol.text, note: mod.symbol.text, display: 'text' });
-     if (residueData.modificationNotationStyles['modX']) possibleResidueTokens[mod.token.toLowerCase()+residue.token] = modifiedResidue;
-     if (residueData.modificationNotationStyles['X(mod)']) {
+     if (modificationNotationStyles['modX']) possibleResidueTokens[mod.token.toLowerCase()+residue.token] = modifiedResidue;
+     if (modificationNotationStyles['X(mod)']) {
       possibleResidueTokens[residue.token+'\('+mod.token+'\)'] = modifiedResidue;
       possibleResidueTokens[residue.token+'\('+mod.token.toLowerCase()+'\)'] = modifiedResidue;
      }
-     if (residueData.modificationNotationStyles['X[mod]']) {
+     if (modificationNotationStyles['X[mod]']) {
       possibleResidueTokens[residue.token+'\['+mod.token+'\]'] = modifiedResidue;
       possibleResidueTokens[residue.token+'\['+mod.token.toLowerCase()+'\]'] = modifiedResidue;
      }
@@ -146,6 +147,10 @@ export let ResidueChain = function _SOURCE() {
   } while(pos < seqString.length);
 //  console.log([tokens,massDeltas]);
   return [ tokens , massDeltas ];
+ }
+
+ _ResidueChain.prototype.toJSON = function() {
+  return [this.args[0],this.type];
  }
 
  _ResidueChain._SOURCE = _SOURCE;

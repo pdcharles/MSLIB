@@ -3,21 +3,25 @@ export let Peptide = function _SOURCE() {
  let _Peptide = function(data) {
  // alt call  : function(sequence, charge, modifications)
 
-  if (typeof(data) === 'string' && arguments.length > 1 && typeof(arguments[1]) === 'number') {
-   let mods = arguments.length > 2 && typeof(arguments[2]) === 'object' ? arguments[2] : {};
-   data = { 
-    charge: arguments[1],
-    chains: [
-     new mslib.data.AminoAcidChain({
-      sequenceString: data,
-      residueDefinitions: {},
-      modificationDefinitions: {},
-      fixedModifications: {},
-      variableModifications: mods
-     })
-    ]
-   }
+  if (typeof(data) === 'string') {
+   if(arguments.length > 1 && typeof(arguments[1]) === 'number') {
+    let mods = arguments.length > 2 && typeof(arguments[2]) === 'object' ? arguments[2] : mslib.constants.MODIFICATIONS;
+    data = { 
+     charge: arguments[1],
+     chains: [
+      new mslib.data.AminoAcidChain({
+       sequenceString: data,
+       residueDefinitions: {},
+       modificationDefinitions: mods,
+       fixedModifications: {},
+       variableModifications: {}
+      })
+     ]
+    }
+   } else throw new Error ('missing arguments: Peptide(sequence, charge, modifications)');
   }
+
+  this.args = data;
 
   if (!('charge' in data)) throw new Error ('no precursor charge');
   this.charge = +data.charge;
@@ -241,9 +245,10 @@ export let Peptide = function _SOURCE() {
   return(chainAccumulator);
  }
 
+ _Peptide.prototype.toJSON = function() {
+  return this.args;
+ }
 
  _Peptide._SOURCE = _SOURCE;
-
  return _Peptide;
-
 }();
