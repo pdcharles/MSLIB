@@ -1,0 +1,14 @@
+{
+ // See https://go.microsoft.com/fwlink/?LinkId=733558
+ // for the documentation about the tasks.json format
+ "version": "2.0.0",
+ "tasks": [
+  {
+   "label": "rollup mslib",
+   "type": "shell",
+   "command": "rollup --input v2/js/mslib.js --file v2/js/mslib.bundle.js --format iife",
+   "problemMatcher": [],
+   "group": "build"
+  }
+ ]
+}
