@@ -20,9 +20,9 @@ export let moietymath = function _SOURCE() {
   let newDistribution;
   if (typeof(elements) === 'undefined') elements = mslib.constants.ELEMENTS;
   if (charge > 0) {
-   newDistribution = new mslib.data.Distribution(elements.HYDROGEN.isotopes).normalise();
+   newDistribution = new mslib.data.Distribution(elements.H.isotopes).normalise();
    for (let i = 1; i < charge; i++) {
-    newDistribution = newDistribution.convolute(new mslib.data.Distribution(elements.HYDROGEN.isotopes).normalise());
+    newDistribution = newDistribution.convolute(new mslib.data.Distribution(elements.H.isotopes).normalise());
    }
   }
   else {
@@ -30,6 +30,7 @@ export let moietymath = function _SOURCE() {
   }
   Object.keys(m.atoms).forEach(ele => {
    if (m.atoms[ele]) {
+    if (m.atoms[ele] < 0) throw new Error('moietymathDistributionWithNegativeAtomNumber');
     let binaryMask = m.atoms[ele].toString(2).split("").reverse().map((i) => parseInt(i));
     let doublingsRequired = binaryMask.length-1;
     let intermediateDistributions = []
@@ -58,11 +59,16 @@ export let moietymath = function _SOURCE() {
   return newDistribution;
  }
 
+ let monoisotopeIndex = function(isotopes) {
+  let maxAb = Math.max(...isotopes.map(e => e[1]));
+  return isotopes.findIndex(e => e[1]==maxAb);
+ }
+
  let monoisotopicMass = function(m,elements) {
   check(m);
   if (typeof(elements) === 'undefined') elements = mslib.constants.ELEMENTS;
   return (Object.entries(m.atoms).reduce((acc,[atom,n]) => {
-   acc += elements[atom].isotopes[0][0]*n;
+   acc += elements[atom].isotopes[monoisotopeIndex(elements[atom].isotopes)][0]*n;
    return acc;
   },m.massDelta ? m.massDelta : 0));
  }
@@ -71,19 +77,22 @@ export let moietymath = function _SOURCE() {
   check(m);
   charge = (charge ? +charge : 1);
   if (typeof(elements) === 'undefined') elements = mslib.constants.ELEMENTS;
-  return (monoisotopicMass(m,elements) + elements.HYDROGEN.isotopes[0][0]*charge)/charge;
+  return (monoisotopicMass(m,elements) + elements.H.isotopes[0][0]*charge)/charge;
  }
 
  let monoAndPlusOneMz = function(m,charge,elements) {
   check(m);
   if (typeof(elements) === 'undefined') elements = mslib.constants.ELEMENTS;
   let monoMz = monoisotopicMz(m,charge,elements);
-  let totalInt = charge * elements.HYDROGEN.isotopes[1][1];
-  let massDiff = (elements.HYDROGEN.isotopes[1][0] - elements.HYDROGEN.isotopes[0][0]) * charge * elements.HYDROGEN.isotopes[1][1];
+  let totalInt = 0;
+  let massDiff = 0;
   Object.entries(m.atoms).forEach(([k,v]) => {
-   let contributedInt = v * elements[k].isotopes[1][1] 
-   totalInt += contributedInt;
-   massDiff += (elements[k].isotopes[1][0] - elements[k].isotopes[0][0]) * contributedInt;
+   let mi = monoisotopeIndex(elements[k].isotopes);
+   if (mi < elements[k].isotopes.length-1) {
+    let contributedInt = v * elements[k].isotopes[mi+1][1] 
+    totalInt += contributedInt;
+    massDiff += (elements[k].isotopes[mi+1][0] - elements[k].isotopes[mi][0]) * contributedInt;
+   }
   });
   massDiff /= totalInt;
   return [monoMz,monoMz+massDiff/charge];
@@ -93,7 +102,7 @@ export let moietymath = function _SOURCE() {
   check(m);
   if (!n) n = 1;
   if (!charge) charge = 1;
-  if (typeof(ppm) == 'undefined') ppmGap = 5;
+  if (typeof(ppmGap) == 'undefined') ppmGap = 5;
   let mzs = distribution(m,charge,elements).centroidToMaximas(ppmGap).normalise().values.sort((a,b) => b[1] - a[1]);
   return mzs.slice(0,Math.min(n,mzs.length)).map(e => e[0]);
  }

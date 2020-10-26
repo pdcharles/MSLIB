@@ -7,72 +7,78 @@ export let constants = function _SOURCE() {
  let _constants = {
   ELEMENTS:
   { 
-   CARBON:
+   C:
    {
-    token : 'C',
-    symbol : {
-     text : 'C',
-     display : 'text'
+    caption: 'Carbon',
+    token: 'C',
+    symbol: {
+     text: 'C',
+     display: 'text'
     },
     isotopes: [
                [ 12.00000000,  0.98892 ],  //NBS 19 (TS-Limestone)
                [ 13.00335484,  0.01108 ]
               ]              
    },
-   CARBON13:
+   '13C':
    {
-    token : '13C',
-    symbol : {
-     text : '13C',
-     display : 'text'
+    caption: 'Carbon-13',
+    token: '13C',
+    symbol: {
+     text: '13C',
+     display: 'text'
     },
     isotopes: [
                [ 12.00000000,  0.005 ],    //SILAC Carbon-13 incorporation typically ~99.5% (Thermo & Sigma reagents)
                [ 13.00335484,  0.995 ]
               ]              
    },
-   HYDROGEN:
+   H:
    {
-    token : 'H',
-    symbol : {
-     text : 'H',
-     display : 'text'
+    caption: 'Hydrogen',
+    token: 'H',
+    symbol: {
+     text: 'H',
+     display: 'text'
     },
     isotopes: [
                [ 1.007825032,  0.9998443 ], //VSMOW (Vienna Standard Mean Ocean Water)
                [ 2.014101778,  0.0001557 ]
               ]
    },
-   NITROGEN:
+   N:
    {
-    token : 'N',
-    symbol : {
-     text : 'N',
-     display : 'text'
+    caption: 'Nitrogen',
+    token: 'N',
+    symbol: {
+     text: 'N',
+     display: 'text'
     },
     isotopes: [
                [ 14.00307400, 0.99634 ],   //Air
                [ 15.00010890, 0.00366 ] 
               ]
    },
-   NITROGEN15:
+   '15N':
    {
-    token : '15N',
-    symbol : {
-     text : '15N',
-     display : 'text'
+    caption: 'Nitrogen-15',
+    token: '15N',
+    symbol: {
+     text: '15N',
+     display: 'text'
     },
     isotopes: [
                [ 14.00307400, 0.005 ],     //SILAC Nitrogen-15 incorporation typically ~99.5% (Thermo & Sigma reagents)
                [ 15.00010890, 0.995 ] 
               ]
    },
-   OXYGEN:
+   O:
    {
-    token : 'O',
-    symbol : {
-     text : 'O',
-     display : 'text'
+    caption: 'Oxygen',
+    token: 'O',
+    symbol: {
+     text: 'O',
+     display: 'text'
     },
     isotopes: [
                [ 15.99491462,  0.997621 ],  //VSMOW (Vienna Standard Mean Ocean Water)
@@ -80,41 +86,61 @@ export let constants = function _SOURCE() {
                [ 17.99915961,  0.002000 ]
               ]
    },
-   PHOSPHORUS:
+   P:
    {
-    token : 'P',
-    symbol : {
-     text : 'P',
-     display : 'text'
+    caption: 'Phosphorus',
+    token: 'P',
+    symbol: {
+     text: 'P',
+     display: 'text'
     },
     isotopes: [
-               [ 30.9737619986, 1 ]           //N/A
+               [ 30.97376200, 1 ]           //N/A
               ]
    },
-   SULPHUR:
+   S:
    {
-    token : 'S',
-    symbol : {
-     text : 'S',
-     display : 'text'
+    caption: 'Sulphur',
+    token: 'S',
+    symbol: {
+     text: 'S',
+     display: 'text'
     },
     isotopes: [
-               [ 31.97207,  0.9504074 ],    //IAEA-S-1
-               [ 32.97146,  0.0074869 ],
-               [ 33.96787,  0.0419599 ],
-               [ 35.96708,  0.0001458 ]
+               [ 31.97207117,  0.9504074 ],    //IAEA-S-1
+               [ 32.9714590,   0.0074869 ],
+               [ 33.967867,    0.0419599 ],
+               [ 35.96708,     0.0001458 ]
               ]
    },
-   BROMINE:
+   Br:
    {
-    token : 'Br',
-    symbol : {
-     text : 'Br',
-     display : 'text'
+    caption: 'Bromine',
+    token: 'Br',
+    symbol: {
+     text: 'Br',
+     display: 'text'
     },
     isotopes: [
-               [ 78.9183371,  0.50686 ],    //NIST SRM 977
-               [ 80.9162906,  0.49314 ]
+               [ 78.91834,  0.50686 ],    //NIST SRM 977
+               [ 80.91629,  0.49314 ]
+              ]
+   },
+   Se:
+   {
+    caption: 'Selenium',
+    token: 'Se',
+    symbol: {
+     text: 'Se',
+     display: 'text'
+    },
+    isotopes: [
+               [ 73.922476,  0.0086 ],
+               [ 75.919214,  0.0923 ],
+               [ 76.919914,  0.0760 ],
+               [ 77.91731,   0.2369 ],
+               [ 79.91652,   0.4980 ],
+               [ 81.91670,   0.0882 ],
               ]
    }
   },
@@ -124,305 +150,336 @@ export let constants = function _SOURCE() {
    {
     ALANINE:
     {
-     token : 'A',
-     symbol : {
-      text : 'A',
-      display : 'text'
+     token: 'A',
+     symbol: {
+      text: 'A',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 3,
-      HYDROGEN: 5,
-      NITROGEN: 1,
-      OXYGEN  : 1
+      C: 3,
+      H: 5,
+      N: 1,
+      O: 1
      },
-     caption : 'Alanine'
+     caption: 'Alanine'
     },
     ARGININE:
     {
-     token : 'R',
-     symbol : {
-      text : 'R',
-      display : 'text'
+     token: 'R',
+     symbol: {
+      text: 'R',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN:12,
-      NITROGEN: 4,
-      OXYGEN  : 1
+      C: 6,
+      H:12,
+      N: 4,
+      O: 1
      },
-     caption : 'Arginine'
+     caption: 'Arginine'
     },
     ASPARAGINE: 
     {
-     token : 'N',
-     symbol : {
-      text : 'N',
-      display : 'text'
+     token: 'N',
+     symbol: {
+      text: 'N',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 4,
-      HYDROGEN: 6,
-      NITROGEN: 2,
-      OXYGEN  : 2
+      C: 4,
+      H: 6,
+      N: 2,
+      O: 2
      },
-     caption : 'Asparagine'
+     caption: 'Asparagine'
     },
     ASPARTATE:  
     {
-     token : 'D',
-     symbol : {
-      text : 'D',
-      display : 'text'
+     token: 'D',
+     symbol: {
+      text: 'D',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 4,
-      HYDROGEN: 5,
-      NITROGEN: 1,
-      OXYGEN  : 3
+      C: 4,
+      H: 5,
+      N: 1,
+      O: 3
      },
-     caption : 'Aspartate'
+     caption: 'Aspartate'
     },
     CYSTEINE:  
     {
-     token : 'C',
-     symbol : {
-      text : 'C',
-      display : 'text'
+     token: 'C',
+     symbol: {
+      text: 'C',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 3,
-      HYDROGEN: 5,
-      NITROGEN: 1,
-      OXYGEN  : 1,
-      SULPHUR : 1
+      C: 3,
+      H: 5,
+      N: 1,
+      O: 1,
+      S: 1
      },
-     caption : 'Cysteine'
+     caption: 'Cysteine'
     },
     GLUTAMATE:
     {
-     token : 'E',
-     symbol : {
-      text : 'E',
-      display : 'text'
+     token: 'E',
+     symbol: {
+      text: 'E',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 5,
-      HYDROGEN: 7,
-      NITROGEN: 1,
-      OXYGEN  : 3
+      C: 5,
+      H: 7,
+      N: 1,
+      O: 3
      },
-     caption : 'Glutamate'
+     caption: 'Glutamate'
     },
     GLUTAMINE:
     {
-     token : 'Q',
-     symbol : {
-      text : 'Q',
-      display : 'text'
+     token: 'Q',
+     symbol: {
+      text: 'Q',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 5,
-      HYDROGEN: 8,
-      NITROGEN: 2,
-      OXYGEN  : 2
+      C: 5,
+      H: 8,
+      N: 2,
+      O: 2
      },
-     caption : 'Glutamine'
+     caption: 'Glutamine'
     },
     GLYCINE:
     {
-     token : 'G',
-     symbol : {
-      text : 'G',
-      display : 'text'
+     token: 'G',
+     symbol: {
+      text: 'G',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 2,
-      HYDROGEN: 3,
-      NITROGEN: 1,
-      OXYGEN  : 1
+      C: 2,
+      H: 3,
+      N: 1,
+      O: 1
      },
-     caption : 'Glycine'
+     caption: 'Glycine'
     },
     HISTIDINE:
     {
-     token : 'H',
-     symbol : {
-      text : 'H',
-      display : 'text'
+     token: 'H',
+     symbol: {
+      text: 'H',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN: 7,
-      NITROGEN: 3,
-      OXYGEN  : 1
+      C: 6,
+      H: 7,
+      N: 3,
+      O: 1
      },
-     caption : 'Histidine'
+     caption: 'Histidine'
     },
     ISOLEUCINE:
     {
-     token : 'I',
-     symbol : {
-      text : 'I',
-      display : 'text'
+     token: 'I',
+     symbol: {
+      text: 'I',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN:11,
-      NITROGEN: 1,
-      OXYGEN  : 1
+      C: 6,
+      H:11,
+      N: 1,
+      O: 1
      },
-     caption : 'Isoleucine'
+     caption: 'Isoleucine'
     },
     LEUCINE:
     {
-     token : 'L',
-     symbol : {
-      text : 'L',
-      display : 'text'
+     token: 'L',
+     symbol: {
+      text: 'L',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN:11,
-      NITROGEN: 1,
-      OXYGEN  : 1
+      C: 6,
+      H:11,
+      N: 1,
+      O: 1
      },
-     caption : 'Leucine'
+     caption: 'Leucine'
     },
     LYSINE:
     {
-     token : 'K',
-     symbol : {
-      text : 'K',
-      display : 'text'
+     token: 'K',
+     symbol: {
+      text: 'K',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN:12,
-      NITROGEN: 2,
-      OXYGEN  : 1
+      C: 6,
+      H:12,
+      N: 2,
+      O: 1
      },
-     caption : 'Lysine'
+     caption: 'Lysine'
     },
     METHIONINE:
     {
-     token : 'M',
-     symbol : {
-      text : 'M',
-      display : 'text'
+     token: 'M',
+     symbol: {
+      text: 'M',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 5,
-      HYDROGEN: 9,
-      NITROGEN: 1,
-      OXYGEN  : 1,
-      SULPHUR : 1
+      C: 5,
+      H: 9,
+      N: 1,
+      O: 1,
+      S: 1
      },
-     caption : 'Methionine'
+     caption: 'Methionine'
     },
     PHENYLALANINE:
     {
-     token : 'F',
-     symbol : {
-      text : 'F',
-      display : 'text'
+     token: 'F',
+     symbol: {
+      text: 'F',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 9,
-      HYDROGEN: 9,
-      NITROGEN: 1,
-      OXYGEN  : 1
+      C: 9,
+      H: 9,
+      N: 1,
+      O: 1
      },
-     caption : 'Phenylalanine'
+     caption: 'Phenylalanine'
     },
     PROLINE:
     {
-     token : 'P',
-     symbol : {
-      text : 'P',
-      display : 'text'
+     token: 'P',
+     symbol: {
+      text: 'P',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 5,
-      HYDROGEN: 7,
-      NITROGEN: 1,
-      OXYGEN  : 1
+      C: 5,
+      H: 7,
+      N: 1,
+      O: 1
      },
-     caption : 'Proline'
+     caption: 'Proline'
     },
     SERINE:
     {
-     token : 'S',
-     symbol : {
-      text : 'S',
-      display : 'text'
+     token: 'S',
+     symbol: {
+      text: 'S',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 3,
-      HYDROGEN: 5,
-      NITROGEN: 1,
-      OXYGEN  : 2
+      C: 3,
+      H: 5,
+      N: 1,
+      O: 2
      },
-     caption : 'Serine'
+     caption: 'Serine'
     },
     THREONINE:
     {
-     token : 'T',
-     symbol : {
-      text : 'T',
-      display : 'text'
+     token: 'T',
+     symbol: {
+      text: 'T',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 4,
-      HYDROGEN: 7,
-      NITROGEN: 1,
-      OXYGEN  : 2
+      C: 4,
+      H: 7,
+      N: 1,
+      O: 2
      },
-     caption : 'Threonine'
+     caption: 'Threonine'
     },
     TRYPTOPHAN:
     {
-     token : 'W',
-     symbol : {
-      text : 'W',
-      display : 'text'
+     token: 'W',
+     symbol: {
+      text: 'W',
+      display: 'text'
      },
      atoms: {
-      CARBON  :11,
-      HYDROGEN:10,
-      NITROGEN: 2,
-      OXYGEN  : 1
+      C:11,
+      H:10,
+      N: 2,
+      O: 1
      },
-     caption : 'Tryptophan'
+     caption: 'Tryptophan'
     },
     TYROSINE:
     {
-     token : 'Y',
-     symbol : {
-      text : 'Y',
-      display : 'text'
+     token: 'Y',
+     symbol: {
+      text: 'Y',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 9,
-      HYDROGEN: 9,
-      NITROGEN: 1,
-      OXYGEN  : 2
+      C: 9,
+      H: 9,
+      N: 1,
+      O: 2
      },
-     caption : 'Tyrosine'
+     caption: 'Tyrosine'
     },
     VALINE:
     {
-     token : 'V',
-     symbol : {
-      text : 'V',
-      display : 'text'
+     token: 'V',
+     symbol: {
+      text: 'V',
+      display: 'text'
      },
      atoms: {
-      CARBON  : 5,
-      HYDROGEN: 9,
-      NITROGEN: 1,
-      OXYGEN  : 1
+      C: 5,
+      H: 9,
+      N: 1,
+      O: 1
      },
-     caption : 'Valine'
+     caption: 'Valine'
+    },
+    SELENOCYSTEINE:
+    {
+     token: 'U',
+     symbol: {
+      text: 'U',
+      display: 'text'
+     },
+     atoms: {
+      C: 3,
+      H: 5,
+      N: 1,
+      O: 1,
+      Se: 1
+     },
+     caption: 'Selenocysteine'
+    },
+    PYRROLYSINE:
+    {
+     token: 'O',
+     symbol: {
+      text: 'O',
+      display: 'text'
+     },
+     atoms: {
+      C: 12,
+      H: 19,
+      N: 3,
+      O: 2,
+     },
+     caption: 'Pyrrolysine'
     }
    },
 
@@ -441,85 +498,85 @@ export let constants = function _SOURCE() {
    {
     SIALICACID:
     {
-     token : 'Sia',
-     symbol : {
-      text : 'Sia',
-      icon : 'diamond',
-      colour : 'rgb(237,28,36)', //red
-      display : 'icon'
+     token: 'Sia',
+     symbol: {
+      text: 'Sia',
+      icon: 'diamond',
+      colour: 'rgb(237,28,36)', //red
+      display: 'icon'
      },
      atoms: {
-      CARBON  : 11,
-      HYDROGEN: 17,
-      NITROGEN: 1,
-      OXYGEN  : 8
+      C: 11,
+      H: 17,
+      N: 1,
+      O: 8
      },
-     caption : 'Unspecified Sialic Acid'
+     caption: 'Unspecified Sialic Acid'
     },
     GALACTOSE:
     {
-     token : 'Gal',
-     symbol : {
-      text : 'Gal',
-      icon : 'circle',
-      colour : 'rgb(255,212,0)', //yellow
-      display : 'icon'
+     token: 'Gal',
+     symbol: {
+      text: 'Gal',
+      icon: 'circle',
+      colour: 'rgb(255,212,0)', //yellow
+      display: 'icon'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN: 10,
-      OXYGEN  : 5
+      C: 6,
+      H: 10,
+      O: 5
      },
-     caption : 'D-Galactose'
+     caption: 'D-Galactose'
     },
     MANNOSE:
     {
-     token : 'Man',
-     symbol : {
-      text : 'Man',
-      icon : 'circle',
-      colour : 'rgb(0,166,81)', //green
-      display : 'icon'
+     token: 'Man',
+     symbol: {
+      text: 'Man',
+      icon: 'circle',
+      colour: 'rgb(0,166,81)', //green
+      display: 'icon'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN: 10,
-      OXYGEN  : 5
+      C: 6,
+      H: 10,
+      O: 5
      },
-     caption : 'D-Mannose'
+     caption: 'D-Mannose'
     },
     NACETYLGLUCOSAMINE:
     {
-     token : 'GlcNAc',
-     symbol : {
-      text : 'GlcNAc',
-      icon : 'square',
-      colour : 'rgb(0,144,188)', //blue
-      display : 'icon'
+     token: 'GlcNAc',
+     symbol: {
+      text: 'GlcNAc',
+      icon: 'square',
+      colour: 'rgb(0,144,188)', //blue
+      display: 'icon'
      },
      atoms: {
-      CARBON  : 11,
-      HYDROGEN: 17,
-      NITROGEN: 1,
-      OXYGEN  : 8
+      C: 11,
+      H: 17,
+      N: 1,
+      O: 8
      },
-     caption : 'N-Acetyl-D-Glucosamine'
+     caption: 'N-Acetyl-D-Glucosamine'
     },
     FUCOSE:
     {
-     token : 'Fuc',
-     symbol : {
-      text : 'Fuc',
-      icon : 'triangle',
-      colour : 'rgb(237,28,36)', //red
-      display : 'icon'
+     token: 'Fuc',
+     symbol: {
+      text: 'Fuc',
+      icon: 'triangle',
+      colour: 'rgb(237,28,36)', //red
+      display: 'icon'
      },
      atoms: {
-      CARBON  : 6,
-      HYDROGEN: 10,
-      OXYGEN  : 4
+      C: 6,
+      H: 10,
+      O: 4
      },
-     caption : 'Fucose'
+     caption: 'Fucose'
     }
    }
   },
@@ -527,121 +584,121 @@ export let constants = function _SOURCE() {
   {
    NTERM:
    {
-    symbol : {
-     text : '[N-term.]',
-     display : 'text'
+    symbol: {
+     text: '[N-term.]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:1
+     H:1
     },
-    caption : 'Peptide N-terminus'
+    caption: 'Peptide N-terminus'
    },
    CTERM:
    {
-    symbol : {
-     text : '[C-term.]',
-     display : 'text'
+    symbol: {
+     text: '[C-term.]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:1,
-     OXYGEN:  1
+     H:1,
+     O:  1
     },
-    caption : 'Peptide C-terminus'
+    caption: 'Peptide C-terminus'
    },
    REDUCINGEND:
    {
-    symbol : {
-     text : '[Red.]',
-     display : 'text'
+    symbol: {
+     text: '[Red.]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:1
+     H:1
     },
-    caption : 'Oligosaccharide Reducing End'
+    caption: 'Oligosaccharide Reducing End'
    },
    NONREDUCINGEND:
    {
-    symbol : {
-     text : '[Non-red.]',
-     display : 'text'
+    symbol: {
+     text: '[Non-red.]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:1,
-     OXYGEN:  1
+     H:1,
+     O:  1
     },
-    caption : 'Oligosaccharide Non-reducing End'
+    caption: 'Oligosaccharide Non-reducing End'
    },
    NH2:
    {
-    symbol : {
-     text : '[NH2]',
-     display : 'text'
+    symbol: {
+     text: '[NH2]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:2,
-     NITROGEN:1
+     H:2,
+     N:1
     },
-    caption : 'Amino group'
+    caption: 'Amino group'
    },
    CHO:
    {
-    symbol : {
-     text : '[CHO]',
-     display : 'text'
+    symbol: {
+     text: '[CHO]',
+     display: 'text'
     },
     atoms: {
-     CARBON  :1,
-     HYDROGEN:1,
-     OXYGEN:  1
+     C:1,
+     H:1,
+     O:  1
     },
-    caption : 'Aldehyde (formyl) group'
+    caption: 'Aldehyde (formyl) group'
    },
    H:
    {
-    symbol : {
-     text : '[H]',
-     display : 'text'
+    symbol: {
+     text: '[H]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:1
+     H:1
     },
-    caption : 'Hydrogen'
+    caption: 'Hydrogen'
    },
    CO:
    {
-    symbol : {
-     text : '[CO]',
-     display : 'text'
+    symbol: {
+     text: '[CO]',
+     display: 'text'
     },
     atoms: {
-     CARBON:  1,
-     OXYGEN:  1
+     C:  1,
+     O:  1
     },
-    caption : 'Carbonyl group'
+    caption: 'Carbonyl group'
    },
    AMMONIA:
    {
-    symbol : {
-     text : '[NH3]',
-     display : 'text'
+    symbol: {
+     text: '[NH3]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:3,
-     NITROGEN:1
+     H:3,
+     N:1
     },
-    caption : 'Ammonia'
+    caption: 'Ammonia'
    },
    WATER:
    {
-    symbol : {
-     text : '[H2O]',
-     display : 'text'
+    symbol: {
+     text: '[H2O]',
+     display: 'text'
     },
     atoms: {
-     HYDROGEN:2,
-     OXYGEN  :1
+     H:2,
+     O:1
     },
-    caption : 'Water'
+    caption: 'Water'
    }
   },
   MODIFICATIONS:
@@ -654,9 +711,9 @@ export let constants = function _SOURCE() {
     },
     allowedResidues: ['M'],
     atoms: {
-            OXYGEN: 1
+            O: 1
            },
-    caption : 'Oxidation'
+    caption: 'Oxidation'
    },
    CARBAMIDOMETHYLATION: {
     token: 'cam',
@@ -666,12 +723,12 @@ export let constants = function _SOURCE() {
     },
     allowedResidues: ['C'],
     atoms: {
-            CARBON: 2,
-            HYDROGEN: 3,
-            NITROGEN: 1,
-            OXYGEN: 1
+            C: 2,
+            H: 3,
+            N: 1,
+            O: 1
            },
-    caption : 'Carbamidomethylation'
+    caption: 'Carbamidomethylation'
    },
    DEAMIDATION: {
     token: 'd',
@@ -681,11 +738,11 @@ export let constants = function _SOURCE() {
     },
     allowedResidues: ['N','Q'],
     atoms: {
-            HYDROGEN: -1,
-            NITROGEN: -1,
-            OXYGEN: 1
+            H: -1,
+            N: -1,
+            O: 1
            },
-    caption : 'Deamidation'
+    caption: 'Deamidation'
    },
    PHOSPHORYLATION: {
     token: 'p',
@@ -695,41 +752,41 @@ export let constants = function _SOURCE() {
     },
     allowedResidues: ['N','Q'],
     atoms: {
-            HYDROGEN: 1,
-            OXYGEN: 3,
-            PHOSPHORUS: 1
+            H: 1,
+            O: 3,
+            P: 1
            },
-    caption : 'Phosphorylation'
+    caption: 'Phosphorylation'
    },
    SILAC_LYS8: {
-    token: 'sK8',
+    token: 'sk8',
     symbol: {
-     text: 'sK8',
+     text: 'sk8',
      display: 'text'
     },
     allowedResidues: ['K'],
     atoms: {
-            CARBON: -6,
-            CARBON13: 6,
-            NITROGEN: -2,
-            NITROGEN15: 2
+            C: -6,
+            '13C': 6,
+            N: -2,
+            '15N': 2
            },
-    caption : '13C(6)15N(2) Lysine'
+    caption: '13C(6)15N(2) Lysine'
    },
    SILAC_ARG10: {
-    token: 'sR10',
+    token: 'sr10',
     symbol: {
-     text: 'sR10',
+     text: 'sr10',
      display: 'text'
     },
     allowedResidues: ['R'],
     atoms: {
-            CARBON: -6,
-            CARBON13: 6,
-            NITROGEN: -4,
-            NITROGEN15: 4
+            C: -6,
+            '13C': 6,
+            N: -4,
+            '15N': 4
            },
-    caption : '13C(6)15N(4) Arginine'
+    caption: '13C(6)15N(4) Arginine'
    }
   }
  }
